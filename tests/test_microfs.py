@@ -231,7 +231,7 @@ def test_get_serial():
     with mock.patch(
         "microfs.find_microbit", return_value=mock_result
     ), mock.patch("microfs.Serial", return_value=mock_serial):
-        result = microfs.get_serial(1)
+        result = microfs.get_serial(10)
         assert result == mock_serial
 
 
@@ -323,7 +323,7 @@ def test_execute_no_serial():
         "microfs.raw_off", return_value=None
     ):
         out, err = microfs.execute(commands)
-        p.assert_called_once_with(1)
+        p.assert_called_once_with(10)
         mock_serial.close.assert_called_once_with()
 
 
@@ -379,7 +379,7 @@ def test_ls():
                 "print(os.listdir())",
             ],
             mock_serial,
-            1
+            10
         )
 
 
@@ -401,7 +401,7 @@ def test_ls_width_delimiter():
                 "print(os.listdir())",
             ],
             mock_serial,
-            1
+            10
         )
 
 
@@ -429,7 +429,7 @@ def test_rm():
                 "os.remove('foo')",
             ],
             mock_serial,
-            1
+            10
         )
 
 
@@ -466,7 +466,7 @@ def test_put_python3():
                 "f(b'{}')".format(content),
                 "fd.close()",
             ]
-            execute.assert_called_once_with(commands, mock_serial, 1)
+            execute.assert_called_once_with(commands, mock_serial, 10)
 
 
 def test_put_no_target_python3():
@@ -490,7 +490,7 @@ def test_put_no_target_python3():
                 "f(b'{}')".format(content),
                 "fd.close()",
             ]
-            execute.assert_called_once_with(commands, mock_serial, 1)
+            execute.assert_called_once_with(commands, mock_serial, 10)
 
 
 def test_put_python2():
@@ -515,7 +515,7 @@ def test_put_python2():
                 "f(b'{}')".format(content),
                 "fd.close()",
             ]
-            execute.assert_called_once_with(commands, mock_serial, 1)
+            execute.assert_called_once_with(commands, mock_serial, 10)
 
 
 def test_put_no_target_python2():
@@ -539,7 +539,7 @@ def test_put_no_target_python2():
                 "f(b'{}')".format(content),
                 "fd.close()",
             ]
-            execute.assert_called_once_with(commands, mock_serial, 1)
+            execute.assert_called_once_with(commands, mock_serial, 10)
 
 
 def test_put_non_existent_file():
@@ -603,7 +603,7 @@ def test_get():
         mo = mock.mock_open()
         with mock.patch("microfs.open", mo, create=True):
             assert microfs.get("hello.txt", "local.txt", mock_serial)
-            exe.assert_called_once_with(commands, mock_serial, 1)
+            exe.assert_called_once_with(commands, mock_serial, 10)
             mo.assert_called_once_with("local.txt", "wb")
             handle = mo()
             handle.write.assert_called_once_with(b"hello")
@@ -648,7 +648,7 @@ def test_get_no_target():
         mo = mock.mock_open()
         with mock.patch("microfs.open", mo, create=True):
             assert microfs.get("hello.txt")
-            exe.assert_called_once_with(commands, None, 1)
+            exe.assert_called_once_with(commands, None, 10)
             mo.assert_called_once_with("hello.txt", "wb")
             handle = mo()
             handle.write.assert_called_once_with(b"hello")
@@ -698,7 +698,7 @@ def test_version_good_output():
                 "print(os.uname())",
             ],
             mock_serial,
-            1,
+            10,
         )
 
 
@@ -757,7 +757,7 @@ def test_main_ls():
         builtins, "print"
     ) as mock_print:
         microfs.main(argv=["ls"])
-        mock_ls.assert_called_once_with(1)
+        mock_ls.assert_called_once_with(10)
         mock_print.assert_called_once_with("foo bar")
 
 
@@ -791,7 +791,7 @@ def test_main_ls_no_files():
         "microfs.get_serial", return_value=mock_class
     ), mock.patch.object(builtins, "print") as mock_print:
         microfs.main(argv=["ls"])
-        mock_ls.assert_called_once_with(1)
+        mock_ls.assert_called_once_with(10)
         assert mock_print.call_count == 0
 
 
@@ -807,7 +807,7 @@ def test_main_rm():
         "microfs.get_serial", return_value=mock_class
     ):
         microfs.main(argv=["rm", "foo"])
-        mock_rm.assert_called_once_with("foo", 1)
+        mock_rm.assert_called_once_with("foo", 10)
 
 
 def test_main_rm_with_timeout():
@@ -853,7 +853,7 @@ def test_main_put():
         "microfs.get_serial", return_value=mock_class
     ):
         microfs.main(argv=["put", "foo"])
-        mock_put.assert_called_once_with("foo", None, 1)
+        mock_put.assert_called_once_with("foo", None, 10)
 
 
 def test_main_put_with_timeout():
@@ -899,7 +899,7 @@ def test_main_get():
         "microfs.get_serial", return_value=mock_class
     ):
         microfs.main(argv=["get", "foo"])
-        mock_get.assert_called_once_with("foo", None, 1)
+        mock_get.assert_called_once_with("foo", None, 10)
 
 
 def test_main_get_with_timeout():

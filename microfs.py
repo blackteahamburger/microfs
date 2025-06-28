@@ -108,7 +108,7 @@ def raw_off(serial):
     serial.write(b"\x02")  # Send CTRL-B to get out of raw mode.
 
 
-def get_serial(timeout=1):
+def get_serial(timeout=10):
     """
     Detect if a micro:bit is connected and return a serial object to talk to
     it.
@@ -116,10 +116,10 @@ def get_serial(timeout=1):
     port, serial_number = find_microbit()
     if port is None:
         raise IOError("Could not find micro:bit.")
-    return Serial(port, SERIAL_BAUD_RATE, timeout=1, parity="N")
+    return Serial(port, SERIAL_BAUD_RATE, timeout=10, parity="N")
 
 
-def execute(commands, serial=None, timeout=1):
+def execute(commands, serial=None, timeout=10):
     """
     Sends the command to the connected micro:bit via serial and returns the
     result. If no serial connection is provided, attempts to autodetect the
@@ -172,7 +172,7 @@ def clean_error(err):
     return "There was an error."
 
 
-def ls(serial=None, timeout=1):
+def ls(serial=None, timeout=10):
     """
     List the files on the micro:bit.
 
@@ -195,7 +195,7 @@ def ls(serial=None, timeout=1):
     return ast.literal_eval(out.decode("utf-8"))
 
 
-def rm(filename, serial=None, timeout=1):
+def rm(filename, serial=None, timeout=10):
     """
     Removes a referenced file on the micro:bit.
 
@@ -214,7 +214,7 @@ def rm(filename, serial=None, timeout=1):
     return True
 
 
-def put(filename, target=None, serial=None, timeout=1):
+def put(filename, target=None, serial=None, timeout=10):
     """
     Puts a referenced file on the LOCAL file system onto the
     file system on the BBC micro:bit.
@@ -249,7 +249,7 @@ def put(filename, target=None, serial=None, timeout=1):
     return True
 
 
-def get(filename, target=None, serial=None, timeout=1):
+def get(filename, target=None, serial=None, timeout=10):
     """
     Gets a referenced file on the device's file system and copies it to the
     target (or current working directory if unspecified).
@@ -302,7 +302,7 @@ def get(filename, target=None, serial=None, timeout=1):
     return True
 
 
-def version(serial=None, timeout=1):
+def version(serial=None, timeout=10):
     """
     Returns version information for MicroPython running on the connected
     device.
@@ -374,7 +374,7 @@ def main(argv=None):
             '-t', '--timeout', 
             type=int, 
             help='How long we should wait for the device to respond (in seconds)',
-            default=1
+            default=10
         )
 
         rm_parser = subparsers.add_parser("rm")
@@ -385,7 +385,7 @@ def main(argv=None):
             '-t', '--timeout', 
             type=int, 
             help='How long we should wait for the device to respond (in seconds)',
-            default=1
+            default=10
         )
 
         get_parser = subparsers.add_parser("get")
@@ -399,7 +399,7 @@ def main(argv=None):
             '-t', '--timeout', 
             type=int, 
             help='How long we should wait for the device to respond (in seconds)',
-            default=1
+            default=10
         )
 
         put_parser = subparsers.add_parser("put")
@@ -413,7 +413,7 @@ def main(argv=None):
             '-t', '--timeout', 
             type=int, 
             help='How long we should wait for the device to respond (in seconds)',
-            default=1
+            default=10
         )
 
         args = parser.parse_args(argv)
