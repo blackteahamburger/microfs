@@ -1,6 +1,11 @@
 Release History
 ===============
 
+1.4.6
+-----
+* Add support for timeout command line parameter and default value of timeout is adjusted to 10.
+* When reading a file, byte strings can use single and double quotes.
+
 1.4.5
 -----
 

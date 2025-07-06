@@ -3,7 +3,7 @@ from setuptools import setup
 
 
 #: MAJOR, MINOR, RELEASE, STATUS [alpha, beta, final], VERSION
-_VERSION = (1, 4, 5)
+_VERSION = (1, 4, 6)
 
 
 def get_version():
@@ -30,9 +30,9 @@ setup(
     version=get_version(),
     description=description,
     long_description=readme + "\n\n" + changes,
-    author="Nicholas H.Tollervey",
-    author_email="ntoll@ntoll.org",
-    url="https://github.com/ntoll/microfs",
+    author="Blackteahamburger",
+    author_email="blackteahamburger@outlook.com",
+    url="https://github.com/blackteahamburger/microfs",
     py_modules=[
         "microfs",
     ],

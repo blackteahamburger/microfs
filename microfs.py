@@ -10,6 +10,7 @@ You may:
 * put - copy a named local file onto the device a la equivalent FTP command.
 * get - copy a named file from the device to the local file system a la FTP.
 """
+
 from __future__ import print_function
 import ast
 import argparse
@@ -19,9 +20,6 @@ import time
 import os.path
 from serial.tools.list_ports import comports as list_serial_ports
 from serial import Serial
-
-
-PY2 = sys.version_info < (3,)
 
 
 __all__ = ["ls", "rm", "put", "get", "get_serial"]
@@ -135,7 +133,7 @@ def execute(commands, serial=None, timeout=10):
         serial = get_serial(timeout)
         close_serial = True
         time.sleep(0.1)
-    result = b""
+    result = err = b""
     raw_on(serial)
     time.sleep(0.1)
     # Write the actual command and send CTRL-D to evaluate.
@@ -237,10 +235,7 @@ def put(filename, target=None, serial=None, timeout=10):
     ]
     while content:
         line = content[:64]
-        if PY2:
-            commands.append("f(b" + repr(line) + ")")
-        else:
-            commands.append("f(" + repr(line) + ")")
+        commands.append("f(" + repr(line) + ")")
         content = content[64:]
     commands.append("fd.close()")
     out, err = execute(commands, serial, timeout)
@@ -262,32 +257,28 @@ def get(filename, target=None, serial=None, timeout=10):
     if target is None:
         target = filename
     commands = [
-        "\n".join(
-            [
-                "try:",
-                " from microbit import uart as u",
-                "except ImportError:",
-                " try:",
-                "  from machine import UART",
-                "  u = UART(0, {})".format(SERIAL_BAUD_RATE),
-                " except Exception:",
-                "  try:",
-                "   from sys import stdout as u",
-                "  except Exception:",
-                "   raise Exception('Could not find UART module in device.')",
-            ]
-        ),
+        "\n".join([
+            "try:",
+            " from microbit import uart as u",
+            "except ImportError:",
+            " try:",
+            "  from machine import UART",
+            "  u = UART(0, {})".format(SERIAL_BAUD_RATE),
+            " except Exception:",
+            "  try:",
+            "   from sys import stdout as u",
+            "  except Exception:",
+            "   raise Exception('Could not find UART module in device.')",
+        ]),
         "f = open('{}', 'rb')".format(filename),
         "r = f.read",
         "result = True",
-        "\n".join(
-            [
-                "while result:",
-                " result = r(32)",
-                " if result:",
-                "  u.write(repr(result))",
-            ]
-        ),
+        "\n".join([
+            "while result:",
+            " result = r(32)",
+            " if result:",
+            "  u.write(repr(result))",
+        ]),
         "f.close()",
     ]
     out, err = execute(commands, serial, timeout)
@@ -371,10 +362,11 @@ def main(argv=None):
             help='Specify a delimiter string (default is whitespace). Eg. ";"',
         )
         ls_parser.add_argument(
-            '-t', '--timeout', 
-            type=int, 
-            help='How long we should wait for the device to respond (in seconds)',
-            default=10
+            "-t",
+            "--timeout",
+            type=int,
+            help="How long we should wait for the device to respond (in seconds)",
+            default=10,
         )
 
         rm_parser = subparsers.add_parser("rm")
@@ -382,10 +374,11 @@ def main(argv=None):
             "path", nargs="?", help="Specify a target filename."
         )
         rm_parser.add_argument(
-            '-t', '--timeout', 
-            type=int, 
-            help='How long we should wait for the device to respond (in seconds)',
-            default=10
+            "-t",
+            "--timeout",
+            type=int,
+            help="How long we should wait for the device to respond (in seconds)",
+            default=10,
         )
 
         get_parser = subparsers.add_parser("get")
@@ -396,10 +389,11 @@ def main(argv=None):
             "target", nargs="?", help="Specify a target filename."
         )
         get_parser.add_argument(
-            '-t', '--timeout', 
-            type=int, 
-            help='How long we should wait for the device to respond (in seconds)',
-            default=10
+            "-t",
+            "--timeout",
+            type=int,
+            help="How long we should wait for the device to respond (in seconds)",
+            default=10,
         )
 
         put_parser = subparsers.add_parser("put")
@@ -410,10 +404,11 @@ def main(argv=None):
             "target", nargs="?", help="Specify a target filename."
         )
         put_parser.add_argument(
-            '-t', '--timeout', 
-            type=int, 
-            help='How long we should wait for the device to respond (in seconds)',
-            default=10
+            "-t",
+            "--timeout",
+            type=int,
+            help="How long we should wait for the device to respond (in seconds)",
+            default=10,
         )
 
         args = parser.parse_args(argv)
