@@ -3,11 +3,12 @@
 Tests for the microfs module.
 """
 
-import microfs
+import builtins
+from unittest import mock
+
 import pytest
 
-from unittest import mock
-import builtins
+import microfs
 
 
 def test_find_micro_bit():

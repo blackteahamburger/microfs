@@ -12,15 +12,16 @@ You may:
 """
 
 from __future__ import print_function
-import ast
-import argparse
-import sys
-import os
-import time
-import os.path
-from serial.tools.list_ports import comports as list_serial_ports
-from serial import Serial
 
+import argparse
+import ast
+import os
+import os.path
+import sys
+import time
+
+from serial import Serial
+from serial.tools.list_ports import comports as list_serial_ports
 
 __all__ = ["ls", "rm", "put", "get", "get_serial"]
 
