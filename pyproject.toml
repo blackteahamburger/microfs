@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "microfs"
+dynamic = ["version"]
+description = "A module and utility to work with the simple filesystem on the BBC micro:bit"
+readme = "README.rst"
+authors = [
+    { name = "Blackteahamburger", email = "blackteahamburger@outlook.com" },
+]
+license = "MIT"
+requires-python = ">=3.9"
+dependencies = ["pyserial>=3.0.1,<4.0"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Operating System :: POSIX",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Education",
+    "Topic :: Software Development :: Embedded Systems",
+]
+
+[project.urls]
+Homepage = "https://github.com/blackteahamburger/microfs"
+
+[project.scripts]
+ufs = "microfs:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "microfs._VERSION" }

@@ -11,9 +11,10 @@ file system provided by MicroPython on the BBC micro:bit.
 Installation
 ++++++++++++
 
-Download the source code and install the package using the following commands::
+Download the source code and install the package using the following commands with build installed in your system::
 
-    $ python setup.py install
+    $ python -m build
+    $ pip install dist/microfs-<version>-py3-none-any.whl
 
 Usage
 +++++

@@ -39,6 +39,8 @@ You may use the following commands:
 For example, 'ufs ls' will list the files on a connected BBC micro:bit.
 """
 
+#: MAJOR, MINOR, RELEASE, STATUS [alpha, beta, final], VERSION
+_VERSION = "1.4.6"
 
 COMMAND_LINE_FLAG = False  # Indicates running from the command line.
 SERIAL_BAUD_RATE = 115200
