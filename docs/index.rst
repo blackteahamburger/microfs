@@ -16,6 +16,6 @@ API
 .. include:: ../CHANGES.rst
 
 License
-=======
+-----------
 
 .. include:: ../LICENSE
