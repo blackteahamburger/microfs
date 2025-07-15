@@ -13,8 +13,7 @@ Installation
 
 Download the source code and install the package using the following commands with build installed in your system::
 
-    $ python -m build
-    $ pip install dist/microfs-<version>-py3-none-any.whl
+    $ pip install .
 
 Usage
 +++++
@@ -80,10 +79,11 @@ repository with the following command::
 Ensure you have the correct dependencies for development installed by creating
 a virtualenv and running::
 
-    $ pip install -r requirements.txt
+    $ pip install -e ".[dev]"
 
 To locally install your development version of the module into a virtualenv,
 run the following command::
 
-    $ python setup.py develop
+    $ pip install -e .
 
+There is a Makefile that helps with most of the common workflows associated with development.

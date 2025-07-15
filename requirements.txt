@@ -1,5 +1,0 @@
-pytest
-coverage
-sphinx
-pytest-cov
-pyserial>=3.0.1,<4.0
