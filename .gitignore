@@ -6,3 +6,4 @@ microfs.egg-info/*
 dist/*
 build/*
 .pytest_cache/*
+docs/_build/*
