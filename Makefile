@@ -5,6 +5,7 @@ all:
 	@echo "\nThere is no default Makefile target right now. Try:\n"
 	@echo "make clean - reset the project and remove auto-generated assets."
 	@echo "make ruff - run the Ruff linter."
+	@echo "make fix - run the Ruff linter and fix any issues it can."
 	@echo "make test - run the test suite."
 	@echo "make coverage - view a report on test coverage."
 	@echo "make format_check - run the Ruff formatter to check for formatting issues."
@@ -13,7 +14,6 @@ all:
 	@echo "make docs - run sphinx to create project documentation.\n"
 
 clean:
-	rm -rf *_cache
 	rm -rf build
 	rm -rf dist
 	rm -rf microfs.egg-info
@@ -25,6 +25,9 @@ clean:
 
 ruff:
 	ruff check
+
+fix:
+	ruff check --fix
 
 test: clean
 	py.test
