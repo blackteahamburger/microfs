@@ -74,14 +74,11 @@ repository with the following command::
 
     $ git clone https://github.com/blackteahamburger/microfs.git
 
-Ensure you have the correct dependencies for development installed by creating
-a virtualenv and running::
-
-    $ pip install -e ".[dev]"
-
 To locally install your development version of the module into a virtualenv,
 run the following command::
 
-    $ pip install -e .
+    $ pip install -e ".[dev]"
+
+This also ensures that you have the correct dependencies for development.
 
 There is a Makefile that helps with most of the common workflows associated with development.
