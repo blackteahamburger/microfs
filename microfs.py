@@ -19,6 +19,7 @@ import os
 import os.path
 import sys
 import time
+from typing import Literal
 
 from serial import Serial
 from serial.tools.list_ports import comports as list_serial_ports
@@ -42,11 +43,11 @@ For example, 'ufs ls' will list the files on a connected BBC micro:bit.
 #: MAJOR, MINOR, RELEASE, STATUS [alpha, beta, final], VERSION
 _VERSION = "1.4.6"
 
-COMMAND_LINE_FLAG = False  # Indicates running from the command line.
+command_line_flag = False  # Indicates running from the command line.
 SERIAL_BAUD_RATE = 115200
 
 
-def find_microbit():
+def find_microbit() -> tuple[str, str | None] | tuple[None, None]:
     """
     Returns a tuple representation of the port and serial number for a
     connected micro:bit device. If no device is connected the tuple will be
@@ -59,31 +60,35 @@ def find_microbit():
     return (None, None)
 
 
-def raw_on(serial):
+def raw_on(serial: Serial) -> None:
     """
     Puts the device into raw mode.
     """
 
-    def flush_to_msg(serial, msg):
-        """Read the rx serial data until we reach an expected message."""
+    def flush_to_msg(serial: Serial, msg: bytes) -> None:
+        """
+        Read the rx serial data until we reach an expected message.
+        """
         data = serial.read_until(msg)
         if not data.endswith(msg):
-            if COMMAND_LINE_FLAG:
+            if command_line_flag:
                 print(data)
             raise IOError("Could not enter raw REPL.")
 
-    def flush(serial):
-        """Flush all rx input without relying on serial.flushInput()."""
-        n = serial.inWaiting()
+    def flush(serial: Serial) -> None:
+        """
+        Flush all rx input without relying on serial.flushInput().
+        """
+        n = serial.in_waiting
         while n > 0:
             serial.read(n)
-            n = serial.inWaiting()
+            n = serial.in_waiting
 
     raw_repl_msg = b"raw REPL; CTRL-B to exit\r\n>"
     # Send CTRL-B to end raw mode if required.
     serial.write(b"\x02")
     # Send CTRL-C three times between pauses to break out of loop.
-    for i in range(3):
+    for _ in range(3):
         serial.write(b"\r\x03")
         time.sleep(0.01)
     flush(serial)
@@ -102,25 +107,27 @@ def raw_on(serial):
     flush(serial)
 
 
-def raw_off(serial):
+def raw_off(serial: Serial) -> None:
     """
     Takes the device out of raw mode.
     """
     serial.write(b"\x02")  # Send CTRL-B to get out of raw mode.
 
 
-def get_serial(timeout=10):
+def get_serial(timeout: int = 10) -> Serial:
     """
     Detect if a micro:bit is connected and return a serial object to talk to
     it.
     """
-    port, serial_number = find_microbit()
+    port, _serial_number = find_microbit()
     if port is None:
         raise IOError("Could not find micro:bit.")
     return Serial(port, SERIAL_BAUD_RATE, timeout=10, parity="N")
 
 
-def execute(commands, serial=None, timeout=10):
+def execute(
+    commands: list[str], serial: Serial | None = None, timeout: int = 10
+) -> tuple[Literal[b""], bytes] | tuple[bytes, Literal[b""]]:
     """
     Sends the command to the connected micro:bit via serial and returns the
     result. If no serial connection is provided, attempts to autodetect the
@@ -159,7 +166,7 @@ def execute(commands, serial=None, timeout=10):
     return result, err
 
 
-def clean_error(err):
+def clean_error(err: bytes) -> str:
     """
     Take stderr bytes returned from MicroPython and attempt to create a
     non-verbose error message.
@@ -173,7 +180,7 @@ def clean_error(err):
     return "There was an error."
 
 
-def ls(serial=None, timeout=10):
+def ls(serial: Serial | None = None, timeout: int = 10) -> list[str]:
     """
     List the files on the micro:bit.
 
@@ -196,7 +203,9 @@ def ls(serial=None, timeout=10):
     return ast.literal_eval(out.decode("utf-8"))
 
 
-def rm(filename, serial=None, timeout=10):
+def rm(
+    filename: str, serial: Serial | None = None, timeout: int = 10
+) -> Literal[True]:
     """
     Removes a referenced file on the micro:bit.
 
@@ -209,13 +218,18 @@ def rm(filename, serial=None, timeout=10):
         "import os",
         "os.remove('{}')".format(filename),
     ]
-    out, err = execute(commands, serial, timeout)
+    _out, err = execute(commands, serial, timeout)
     if err:
         raise IOError(clean_error(err))
     return True
 
 
-def put(filename, target=None, serial=None, timeout=10):
+def put(
+    filename: str,
+    target: str | None = None,
+    serial: Serial | None = None,
+    timeout: int = 10,
+) -> Literal[True]:
     """
     Puts a referenced file on the LOCAL file system onto the
     file system on the BBC micro:bit.
@@ -241,13 +255,18 @@ def put(filename, target=None, serial=None, timeout=10):
         commands.append("f(" + repr(line) + ")")
         content = content[64:]
     commands.append("fd.close()")
-    out, err = execute(commands, serial, timeout)
+    _out, err = execute(commands, serial, timeout)
     if err:
         raise IOError(clean_error(err))
     return True
 
 
-def get(filename, target=None, serial=None, timeout=10):
+def get(
+    filename: str,
+    target: str | None = None,
+    serial: Serial | None = None,
+    timeout: int = 10,
+) -> Literal[True]:
     """
     Gets a referenced file on the device's file system and copies it to the
     target (or current working directory if unspecified).
@@ -296,7 +315,7 @@ def get(filename, target=None, serial=None, timeout=10):
     return True
 
 
-def version(serial=None, timeout=10):
+def version(serial: Serial | None = None, timeout: int = 10) -> dict[str, str]:
     """
     Returns version information for MicroPython running on the connected
     device.
@@ -330,14 +349,14 @@ def version(serial=None, timeout=10):
     raw = out.decode("utf-8").strip()
     raw = raw[1:-1]
     items = raw.split(", ")
-    result = {}
+    result: dict[str, str] = {}
     for item in items:
         key, value = item.split("=")
         result[key] = value[1:-1]
     return result
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> None:
     """
     Entry point for the command line tool 'ufs'.
 
@@ -348,8 +367,8 @@ def main(argv=None):
     if not argv:
         argv = sys.argv[1:]
     try:
-        global COMMAND_LINE_FLAG
-        COMMAND_LINE_FLAG = True
+        global command_line_flag
+        command_line_flag = True
 
         parser = argparse.ArgumentParser(description=_HELP_TEXT)
 

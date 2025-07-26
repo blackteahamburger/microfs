@@ -11,7 +11,7 @@ import pytest
 import microfs
 
 
-def test_find_micro_bit():
+def test_find_micro_bit() -> None:
     """
     If a micro:bit is connected (according to PySerial) return the port and
     serial number.
@@ -22,11 +22,11 @@ def test_find_micro_bit():
         Pretends to be a representation of a port in PySerial.
         """
 
-        def __init__(self, port_info, serial_number):
+        def __init__(self, port_info: list[str], serial_number: str) -> None:
             self.port_info = port_info
             self.serial_number = serial_number
 
-        def __getitem__(self, key):
+        def __getitem__(self, key: int) -> str:
             return self.port_info[key]
 
     serial_number = "9900023431864e45000e10050000005b00000000cc4d28bd"
@@ -46,7 +46,7 @@ def test_find_micro_bit():
         assert result == ("/dev/ttyACM3", serial_number)
 
 
-def test_find_micro_bit_no_device():
+def test_find_micro_bit_no_device() -> None:
     """
     If there is no micro:bit connected (according to PySerial) return None.
     """
@@ -65,13 +65,13 @@ def test_find_micro_bit_no_device():
         assert result == (None, None)
 
 
-def test_raw_on():
+def test_raw_on() -> None:
     """
     Check the expected commands are sent to the device to put MicroPython into
     raw mode.
     """
     mock_serial = mock.MagicMock()
-    mock_serial.inWaiting.return_value = 0
+    mock_serial.in_waiting = 0
     data = [
         b"raw REPL; CTRL-B to exit\r\n>",
         b"soft reboot\r\n",
@@ -79,7 +79,6 @@ def test_raw_on():
     ]
     mock_serial.read_until.side_effect = data
     microfs.raw_on(mock_serial)
-    assert mock_serial.inWaiting.call_count == 2
     assert mock_serial.write.call_count == 6
     assert mock_serial.write.call_args_list[0][0][0] == b"\x02"
     assert mock_serial.write.call_args_list[1][0][0] == b"\r\x03"
@@ -101,7 +100,6 @@ def test_raw_on():
     ]
     mock_serial.read_until.side_effect = data
     microfs.raw_on(mock_serial)
-    assert mock_serial.inWaiting.call_count == 2
     assert mock_serial.write.call_count == 7
     assert mock_serial.write.call_args_list[0][0][0] == b"\x02"
     assert mock_serial.write.call_args_list[1][0][0] == b"\r\x03"
@@ -117,12 +115,14 @@ def test_raw_on():
     assert mock_serial.read_until.call_args_list[3][0][0] == data[3]
 
 
-def test_raw_on_failures():
+def test_raw_on_failures() -> None:
     """
     Check problem data results in an IO error.
     """
     mock_serial = mock.MagicMock()
-    mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
+    type(mock_serial).in_waiting = mock.PropertyMock(
+        side_effect=[5, 3, 2, 1, 0]
+    )
     data = [
         b"raw REPL; CTRL-B to exit\r\n> foo",
     ]
@@ -135,7 +135,9 @@ def test_raw_on_failures():
         b"soft reboot\r\n foo",
     ]
     mock_serial.read_until.side_effect = data
-    mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
+    type(mock_serial).in_waiting = mock.PropertyMock(
+        side_effect=[5, 3, 2, 1, 0]
+    )
     with pytest.raises(IOError) as ex:
         microfs.raw_on(mock_serial)
     assert ex.value.args[0] == "Could not enter raw REPL."
@@ -146,24 +148,25 @@ def test_raw_on_failures():
         b"foo",
     ]
     mock_serial.read_until.side_effect = data
-    mock_serial.inWaiting.side_effect = None
-    mock_serial.inWaiting.return_value = 0
+    type(mock_serial).in_waiting = mock.PropertyMock(return_value=0)
     with pytest.raises(IOError) as ex:
         microfs.raw_on(mock_serial)
     assert ex.value.args[0] == "Could not enter raw REPL."
 
 
-def test_raw_on_failures_command_line_flag_on():
+def test_raw_on_failures_command_line_flag_on() -> None:
     """
-    If the COMMAND_LINE_FLAG is True, ensure the last data received is output
+    If the command_line_flag is True, ensure the last data received is output
     via the print statemen for debugging purposes.
     """
     with (
         mock.patch("builtins.print") as mock_print,
-        mock.patch("microfs.COMMAND_LINE_FLAG", True),
+        mock.patch("microfs.command_line_flag", True),
     ):
         mock_serial = mock.MagicMock()
-        mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
+        type(mock_serial).in_waiting = mock.PropertyMock(
+            side_effect=[5, 3, 2, 1, 0]
+        )
         data = [
             b"raw REPL; CTRL-B to exit\r\n> foo",
         ]
@@ -179,7 +182,9 @@ def test_raw_on_failures_command_line_flag_on():
             b"soft reboot\r\n foo",
         ]
         mock_serial.read_until.side_effect = data
-        mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
+        type(mock_serial).in_waiting = mock.PropertyMock(
+            side_effect=[5, 3, 2, 1, 0]
+        )
         with pytest.raises(IOError) as ex:
             microfs.raw_on(mock_serial)
         mock_print.assert_called_once_with(data[1])
@@ -192,15 +197,14 @@ def test_raw_on_failures_command_line_flag_on():
             b"foo",
         ]
         mock_serial.read_until.side_effect = data
-        mock_serial.inWaiting.side_effect = None
-        mock_serial.inWaiting.return_value = 0
+        type(mock_serial).in_waiting = mock.PropertyMock(return_value=0)
         with pytest.raises(IOError) as ex:
             microfs.raw_on(mock_serial)
         mock_print.assert_called_once_with(data[3])
         assert ex.value.args[0] == "Could not enter raw REPL."
 
 
-def test_raw_off():
+def test_raw_off() -> None:
     """
     Check that the expected commands are sent to the device to take
     MicroPython out of raw mode.
@@ -211,7 +215,7 @@ def test_raw_off():
     assert mock_serial.write.call_args_list[0][0][0] == b"\x02"
 
 
-def test_get_serial():
+def test_get_serial() -> None:
     """
     Ensure that if a port is found then PySerial is used to create a connection
     to the device.
@@ -229,7 +233,7 @@ def test_get_serial():
         assert result == mock_serial
 
 
-def test_get_serial_no_port():
+def test_get_serial_no_port() -> None:
     """
     An IOError should be raised if no micro:bit is found.
     """
@@ -239,7 +243,7 @@ def test_get_serial_no_port():
     assert ex.value.args[0] == "Could not find micro:bit."
 
 
-def test_execute():
+def test_execute() -> None:
     """
     Ensure that the expected communication happens via the serial connection
     with the connected micro:bit to facilitate the execution of the passed
@@ -276,13 +280,13 @@ def test_execute():
         assert mock_serial.write.call_args_list[3][0][0] == b"\x04"
 
 
-def test_execute_err_result():
+def test_execute_err_result() -> None:
     """
     Ensure that if there's a problem reported via stderr on the Microbit, it's
     returned as such by the execute function.
     """
     mock_serial = mock.MagicMock()
-    mock_serial.inWaiting.return_value = 0
+    type(mock_serial).in_waiting = mock.PropertyMock(return_value=0)
     data = [
         b"raw REPL; CTRL-B to exit\r\n>",
         b"soft reboot\r\n",
@@ -290,7 +294,10 @@ def test_execute_err_result():
         b"OK\x04Error\x04>",
     ]
     mock_serial.read_until.side_effect = data
-    command = "import os; os.listdir()"
+    command = [
+        "import os",
+        "os.listdir()",
+    ]
     with mock.patch("microfs.get_serial", return_value=mock_serial):
         out, err = microfs.execute(command, mock_serial)
         # Check the result is correctly parsed.
@@ -298,7 +305,7 @@ def test_execute_err_result():
         assert err == b"Error"
 
 
-def test_execute_no_serial():
+def test_execute_no_serial() -> None:
     """
     Ensure that if there's no serial object passed into the execute method, it
     attempts to get_serial().
@@ -316,12 +323,12 @@ def test_execute_no_serial():
         mock.patch("microfs.raw_on", return_value=None),
         mock.patch("microfs.raw_off", return_value=None),
     ):
-        out, err = microfs.execute(commands)
+        _ = microfs.execute(commands)
         p.assert_called_once_with(10)
         mock_serial.close.assert_called_once_with()
 
 
-def test_clean_error():
+def test_clean_error() -> None:
     """
     Check that given some bytes (derived from stderr) are turned into a
     readable error message: we're only interested in getting the error message
@@ -339,7 +346,7 @@ def test_clean_error():
     assert result == "OSError: file not found"
 
 
-def test_clean_error_no_stack_trace():
+def test_clean_error_no_stack_trace() -> None:
     """
     Sometimes stderr may not conform to the expected stacktrace structure. In
     which case, just return a string version of the message.
@@ -348,7 +355,7 @@ def test_clean_error_no_stack_trace():
     assert microfs.clean_error(msg) == "This does not conform!"
 
 
-def test_clean_error_but_no_error():
+def test_clean_error_but_no_error() -> None:
     """
     Worst case, the function has been called with empty bytes so return a
     vague message.
@@ -356,7 +363,7 @@ def test_clean_error_but_no_error():
     assert microfs.clean_error(b"") == "There was an error."
 
 
-def test_ls():
+def test_ls() -> None:
     """
     If a list is returned as a result in stdout, ensure that the equivalent
     Python list is returned from ls.
@@ -377,7 +384,7 @@ def test_ls():
         )
 
 
-def test_ls_width_delimiter():
+def test_ls_width_delimiter() -> None:
     """
     If a delimiter is provided, ensure that the result from stdout is
     equivalent to the list returned by Python.
@@ -399,7 +406,7 @@ def test_ls_width_delimiter():
         )
 
 
-def test_ls_with_error():
+def test_ls_with_error() -> None:
     """
     Ensure an IOError is raised if stderr returns something.
     """
@@ -410,7 +417,7 @@ def test_ls_with_error():
     assert ex.value.args[0] == "error"
 
 
-def test_rm():
+def test_rm() -> None:
     """
     Given a filename and nothing in stderr from the micro:bit, return True.
     """
@@ -427,7 +434,7 @@ def test_rm():
         )
 
 
-def test_rm_with_error():
+def test_rm_with_error() -> None:
     """
     Ensure an IOError is raised if stderr returns something.
     """
@@ -438,7 +445,7 @@ def test_rm_with_error():
     assert ex.value.args[0] == "error"
 
 
-def test_put():
+def test_put() -> None:
     """
     Ensure a put of an existing file results in the expected calls to the
     micro:bit and returns True.
@@ -462,7 +469,7 @@ def test_put():
             execute.assert_called_once_with(commands, mock_serial, 10)
 
 
-def test_put_no_target():
+def test_put_no_target() -> None:
     """
     Ensure a put of an existing file results in the expected calls to the
     micro:bit and returns True.
@@ -485,7 +492,7 @@ def test_put_no_target():
             execute.assert_called_once_with(commands, mock_serial, 10)
 
 
-def test_put_non_existent_file():
+def test_put_non_existent_file() -> None:
     """
     Raise an IOError if put attempts to work with a non-existent file on the
     local file system.
@@ -496,7 +503,7 @@ def test_put_non_existent_file():
     assert ex.value.args[0] == "No such file."
 
 
-def test_put_with_error():
+def test_put_with_error() -> None:
     """
     Ensure an IOError is raised if stderr returns something.
     """
@@ -507,7 +514,7 @@ def test_put_with_error():
     assert ex.value.args[0] == "error"
 
 
-def test_get():
+def test_get() -> None:
     """
     Ensure a successful get results in the expected file getting written on
     the local file system with the expected content.
@@ -548,7 +555,7 @@ def test_get():
             handle.write.assert_called_once_with(b"hello")
 
 
-def test_get_no_target():
+def test_get_no_target() -> None:
     """
     Ensure a successful get results in the expected file getting written on
     the local file system with the expected content. In this case, since no
@@ -589,7 +596,7 @@ def test_get_no_target():
             handle.write.assert_called_once_with(b"hello")
 
 
-def test_get_with_error():
+def test_get_with_error() -> None:
     """
     Ensure an IOError is raised if stderr returns something.
     """
@@ -600,7 +607,7 @@ def test_get_with_error():
     assert ex.value.args[0] == "error"
 
 
-def test_version_good_output():
+def test_version_good_output() -> None:
     """
     Ensure the version method returns the expected result when the response
     from the device is the expected bytes.
@@ -637,7 +644,7 @@ def test_version_good_output():
         )
 
 
-def test_version_with_std_err_output():
+def test_version_with_std_err_output() -> None:
     """
     Ensure a ValueError is raised if stderr returns something.
     """
@@ -648,7 +655,7 @@ def test_version_with_std_err_output():
     assert ex.value.args[0] == "error"
 
 
-def test_version_encountered_unknown_problem_when_executing_commands():
+def test_version_encountered_unknown_problem_when_executing_commands() -> None:
     """
     Ensure a ValueError is raised if some other error was encountered when
     trying to connect to the device and read the output of os.uname.
@@ -659,7 +666,7 @@ def test_version_encountered_unknown_problem_when_executing_commands():
             microfs.version(mock_serial)
 
 
-def test_main_no_args():
+def test_main_no_args() -> None:
     """
     If no args are passed, simply display help.
     """
@@ -677,7 +684,7 @@ def test_main_no_args():
         mock_parser.print_help.assert_called_once_with()
 
 
-def test_main_ls():
+def test_main_ls() -> None:
     """
     If the ls command is issued, check the appropriate function is called.
     """
@@ -694,7 +701,7 @@ def test_main_ls():
         mock_print.assert_called_once_with("foo bar")
 
 
-def test_main_ls_with_timeout():
+def test_main_ls_with_timeout() -> None:
     """
     If the ls command is issued, check the appropriate function is called.
     """
@@ -711,7 +718,7 @@ def test_main_ls_with_timeout():
         mock_print.assert_called_once_with("foo bar")
 
 
-def test_main_ls_no_files():
+def test_main_ls_no_files() -> None:
     """
     If the ls command is issued and no files exist, nothing is printed.
     """
@@ -728,7 +735,7 @@ def test_main_ls_no_files():
         assert mock_print.call_count == 0
 
 
-def test_main_rm():
+def test_main_rm() -> None:
     """
     If the rm command is correctly issued, check the appropriate function is
     called.
@@ -744,7 +751,7 @@ def test_main_rm():
         mock_rm.assert_called_once_with("foo", 10)
 
 
-def test_main_rm_with_timeout():
+def test_main_rm_with_timeout() -> None:
     """
     If the rm command is correctly issued, check the appropriate function is
     called.
@@ -760,7 +767,7 @@ def test_main_rm_with_timeout():
         mock_rm.assert_called_once_with("foo", 3)
 
 
-def test_main_rm_no_filename():
+def test_main_rm_no_filename() -> None:
     """
     If rm is not called with an associated filename, then print an error
     message.
@@ -777,7 +784,7 @@ def test_main_rm_no_filename():
     assert pytest_exc.value.code == 2
 
 
-def test_main_put():
+def test_main_put() -> None:
     """
     If the put command is correctly issued, check the appropriate function is
     called.
@@ -793,7 +800,7 @@ def test_main_put():
         mock_put.assert_called_once_with("foo", None, 10)
 
 
-def test_main_put_with_timeout():
+def test_main_put_with_timeout() -> None:
     """
     If the put command is correctly issued, check the appropriate function is
     called.
@@ -809,7 +816,7 @@ def test_main_put_with_timeout():
         mock_put.assert_called_once_with("foo", None, 3)
 
 
-def test_main_put_no_filename():
+def test_main_put_no_filename() -> None:
     """
     If put is not called with an associated filename, then print an error
     message.
@@ -826,7 +833,7 @@ def test_main_put_no_filename():
     assert pytest_exc.value.code == 2
 
 
-def test_main_get():
+def test_main_get() -> None:
     """
     If the get command is correctly issued, check the appropriate function is
     called.
@@ -842,7 +849,7 @@ def test_main_get():
         mock_get.assert_called_once_with("foo", None, 10)
 
 
-def test_main_get_with_timeout():
+def test_main_get_with_timeout() -> None:
     """
     If the get command is correctly issued, check the appropriate function is
     called.
@@ -858,7 +865,7 @@ def test_main_get_with_timeout():
         mock_get.assert_called_once_with("foo", None, 3)
 
 
-def test_main_get_no_filename():
+def test_main_get_no_filename() -> None:
     """
     If get is not called with an associated filename, then print an error
     message.
@@ -875,7 +882,7 @@ def test_main_get_no_filename():
     assert pytest_exc.value.code == 2
 
 
-def test_main_handle_exception():
+def test_main_handle_exception() -> None:
     """
     If an exception is raised, then it gets printed.
     """
