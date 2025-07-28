@@ -24,9 +24,6 @@ from typing import Literal
 from serial import Serial
 from serial.tools.list_ports import comports as list_serial_ports
 
-__all__ = ["ls", "rm", "put", "get", "get_serial"]
-
-
 #: The help text to be shown when requested.
 _HELP_TEXT = """
 Interact with the basic filesystem on a connected BBC micro:bit device.
