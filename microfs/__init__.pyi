@@ -1,8 +1,8 @@
 from serial import Serial
-from typing import Literal
+from typing import Final, Literal
 
 command_line_flag: bool
-SERIAL_BAUD_RATE: int
+SERIAL_BAUD_RATE: Final[int]
 
 def find_microbit() -> tuple[str, str | None] | tuple[None, None]: ...
 def raw_on(serial: Serial) -> None: ...

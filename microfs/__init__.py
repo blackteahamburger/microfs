@@ -19,13 +19,13 @@ import os
 import os.path
 import sys
 import time
-from typing import Literal
+from typing import Final, Literal
 
 from serial import Serial
 from serial.tools.list_ports import comports as list_serial_ports
 
 #: The help text to be shown when requested.
-_HELP_TEXT = """
+_HELP_TEXT: Final = """
 Interact with the basic filesystem on a connected BBC micro:bit device.
 You may use the following commands:
 
@@ -38,10 +38,10 @@ For example, 'ufs ls' will list the files on a connected BBC micro:bit.
 """
 
 #: MAJOR, MINOR, RELEASE, STATUS [alpha, beta, final], VERSION
-_VERSION = "1.4.6"
+_VERSION: Final = "1.4.6"
 
 command_line_flag = False  # Indicates running from the command line.
-SERIAL_BAUD_RATE = 115200
+SERIAL_BAUD_RATE: Final = 115200
 
 
 def find_microbit() -> tuple[str, str | None] | tuple[None, None]:
