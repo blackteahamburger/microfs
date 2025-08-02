@@ -24,7 +24,7 @@ In Code
 
 In your Python script import the required functions like this::
 
-    from microfs import ls, rm, put, get, get_serial
+    from microfs import ls, rm, put, get, version, get_serial
 
 Read the API documentation below to learn how each of the functions works.
 

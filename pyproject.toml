@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "microfs"
-dynamic = ["version"]
+version = "1.5.0"
 description = "A module and utility to work with the simple filesystem on the BBC micro:bit"
 readme = "README.rst"
 authors = [
@@ -42,16 +42,3 @@ Homepage = "https://github.com/blackteahamburger/microfs"
 
 [project.scripts]
 ufs = "microfs:main"
-
-[tool.setuptools.dynamic]
-version = { attr = "microfs._VERSION" }
-
-[tool.ruff]
-preview = true
-unsafe-fixes = true
-target-version = "py313"
-line-length = 79
-builtins = ["_"]
-
-[tool.ruff.format]
-exclude = ["*.pyi"]

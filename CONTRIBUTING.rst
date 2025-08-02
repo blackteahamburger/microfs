@@ -32,7 +32,7 @@ under the license as defined in the LICENSE file found within this repository.
 Checklist
 +++++++++
 
-* Your code should be commented in *plain English* (British spelling).
+* Your code should be commented in *plain English*.
 * If your contribution is for a major block of work and you've not done so
   already, add yourself to the AUTHORS file following the convention found
   therein.
