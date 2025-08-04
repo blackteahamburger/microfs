@@ -90,7 +90,7 @@ the name of the target file::
     $ ufs put /path/to/local.txt remote.txt
     $ ufs get remote.txt local.txt
 
-Get the version of the micro:bit firmware::
+Get version information for MicroPython running on the device::
 
     $ ufs version
 
