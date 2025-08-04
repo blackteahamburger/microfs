@@ -4,8 +4,11 @@
 # See the LICENSE file for more information.
 """Tests for the microfs module."""
 
+from __future__ import annotations
+
 import builtins
 import pathlib
+from typing import TYPE_CHECKING, Any
 from unittest import mock
 
 import pytest
@@ -13,7 +16,19 @@ import pytest
 from microfs.lib import MicroBitIOError, MicroBitNotFoundError
 from microfs.main import main
 
-MICROFS_VERSION = "1.2.3"
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+MICROFS_VERSION = "2.0.0"
+
+
+@pytest.fixture(autouse=True)
+def patch_importlib_metadata_version() -> Generator[None, Any]:
+    """Fixture to patch importlib.metadata.version to return MICROFS_VERSION."""
+    with mock.patch(
+        "microfs.main.importlib.metadata.version", return_value=MICROFS_VERSION
+    ):
+        yield
 
 
 def test_main_timeout() -> None:
@@ -151,20 +166,15 @@ def test_main_version() -> None:
 
 def test_main_version_flag() -> None:
     """Test that main prints version when '--version' flag is used."""
-    with mock.patch(
-        "microfs.main.importlib.metadata.version", return_value=MICROFS_VERSION
+    with (
+        mock.patch("sys.argv", ["ufs", "--version"]),
+        mock.patch("sys.stdout") as mock_stdout,
+        pytest.raises(SystemExit) as pytest_exc,
     ):
-        with (
-            mock.patch("sys.argv", ["ufs", "--version"]),
-            mock.patch("sys.stdout") as mock_stdout,
-            pytest.raises(SystemExit) as pytest_exc,
-        ):
-            main()
-        output = "".join(
-            call.args[0] for call in mock_stdout.write.call_args_list
-        )
-        assert f"microfs version: {MICROFS_VERSION}" in output
-        assert pytest_exc.type is SystemExit
+        main()
+    output = "".join(call.args[0] for call in mock_stdout.write.call_args_list)
+    assert f"microfs version: {MICROFS_VERSION}" in output
+    assert pytest_exc.type is SystemExit
 
 
 def test_main_handles_microbit_io_error() -> None:

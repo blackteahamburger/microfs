@@ -97,7 +97,7 @@ The following commands are available:
     parser.add_argument(
         "--version",
         action="version",
-        version=f"microfs version: {importlib.metadata.version('microfs')}",
+        version=f"microfs version: {importlib.metadata.version('microfs2')}",
         help="output version information of microfs and exit",
     )
     parser.add_argument(
