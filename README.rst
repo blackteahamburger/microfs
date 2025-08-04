@@ -1,7 +1,7 @@
 MicroFS
 =======
 
-A community fork of uflash. PR welcome!
+A community fork of MicroFS. PR welcome!
 
 A simple command line tool and module for interacting with the limited
 file system provided by MicroPython on the BBC micro:bit.
