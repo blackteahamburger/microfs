@@ -1,0 +1,251 @@
+# Copyright (c) 2025 Blackteahamburger <blackteahamburger@outlook.com>
+# Copyright (c) 2016 Nicholas H.Tollervey
+#
+# See the LICENSE file for more information.
+"""Tests for the microfs module."""
+
+import builtins
+import pathlib
+from unittest import mock
+
+import pytest
+
+from microfs.lib import MicroBitIOError, MicroBitNotFoundError
+from microfs.main import main
+
+MICROFS_VERSION = "1.2.3"
+
+
+def test_main_timeout() -> None:
+    """Test that the default timeout is set to 10 seconds."""
+    with (
+        mock.patch("sys.argv", ["ufs", "ls"]),
+        mock.patch("microfs.main.ls") as mock_ls,
+    ):
+        main()
+        mock_ls.assert_called_once_with(10)
+
+
+def test_main_ls() -> None:
+    """If the ls command is issued, check the appropriate function is called."""
+    with (
+        mock.patch("sys.argv", ["ufs", "ls"]),
+        mock.patch("microfs.main.ls", return_value=["foo", "bar"]) as mock_ls,
+        mock.patch.object(builtins, "print") as mock_print,
+    ):
+        main()
+        mock_ls.assert_called_once_with(10)
+        mock_print.assert_called_once_with("foo bar")
+
+
+def test_main_ls_no_files() -> None:
+    """If the ls command is issued and no files exist, nothing is printed."""
+    with (
+        mock.patch("sys.argv", ["ufs", "ls"]),
+        mock.patch("microfs.main.ls", return_value=[]) as mock_ls,
+        mock.patch.object(builtins, "print") as mock_print,
+    ):
+        main()
+        mock_ls.assert_called_once_with(10)
+        mock_print.assert_not_called()
+
+
+def test_main_rm() -> None:
+    """
+    If the rm command is correctly issued, check the appropriate function is
+    called.
+    """
+    with (
+        mock.patch("sys.argv", ["ufs", "rm", "foo", "bar"]),
+        mock.patch("microfs.main.rm", return_value=True) as mock_rm,
+    ):
+        main()
+        mock_rm.assert_called_once_with(["foo", "bar"], 10)
+
+
+def test_main_cp() -> None:
+    """Test that the cp command calls the cp function with correct arguments."""
+    with (
+        mock.patch("sys.argv", ["ufs", "cp", "foo.txt", "bar.txt"]),
+        mock.patch("microfs.main.cp", return_value=True) as mock_cp,
+    ):
+        main()
+        mock_cp.assert_called_once_with("foo.txt", "bar.txt", 10)
+
+
+def test_main_mv() -> None:
+    """Test that the mv command calls the mv function with correct arguments."""
+    with (
+        mock.patch("sys.argv", ["ufs", "mv", "foo.txt", "bar.txt"]),
+        mock.patch("microfs.main.mv", return_value=True) as mock_mv,
+    ):
+        main()
+        mock_mv.assert_called_once_with("foo.txt", "bar.txt", 10)
+
+
+def test_main_cat() -> None:
+    """Test that the cat command calls the cat function and prints the content."""
+    with (
+        mock.patch("sys.argv", ["ufs", "cat", "foo.txt"]),
+        mock.patch("microfs.main.cat", return_value="filecontent") as mock_cat,
+        mock.patch.object(builtins, "print") as mock_print,
+    ):
+        main()
+        mock_cat.assert_called_once_with("foo.txt", 10)
+        mock_print.assert_called_once_with("filecontent")
+
+
+def test_main_du() -> None:
+    """Test that the du command calls the du function and prints the result."""
+    with (
+        mock.patch("sys.argv", ["ufs", "du", "foo.txt"]),
+        mock.patch("microfs.main.du", return_value=1024) as mock_du,
+        mock.patch.object(builtins, "print") as mock_print,
+    ):
+        main()
+        mock_du.assert_called_once_with("foo.txt", 10)
+        mock_print.assert_called_once_with(1024)
+
+
+def test_main_put() -> None:
+    """
+    If the put command is correctly issued, check the appropriate function is
+    called.
+    """
+    with (
+        mock.patch("sys.argv", ["ufs", "put", "foo"]),
+        mock.patch("microfs.main.put", return_value=True) as mock_put,
+    ):
+        main()
+        mock_put.assert_called_once_with(pathlib.Path("foo"), None, 10)
+
+
+def test_main_get() -> None:
+    """
+    If the get command is correctly issued, check the appropriate function is
+    called.
+    """
+    with (
+        mock.patch("sys.argv", ["ufs", "get", "foo"]),
+        mock.patch("microfs.main.get", return_value=True) as mock_get,
+    ):
+        main()
+        mock_get.assert_called_once_with("foo", None, 10)
+
+
+def test_main_version() -> None:
+    """Test that main prints version information when 'version' command is used."""
+    version_info = {"sysname": "microbit", "release": "1.0"}
+    with (
+        mock.patch("sys.argv", ["ufs", "version"]),
+        mock.patch(
+            "microfs.main.version", return_value=version_info
+        ) as mock_version,
+        mock.patch.object(builtins, "print") as mock_print,
+    ):
+        main()
+        mock_version.assert_called_once_with(10)
+        mock_print.assert_any_call(f"sysname: {version_info['sysname']}")
+        mock_print.assert_any_call(f"release: {version_info['release']}")
+
+
+def test_main_version_flag() -> None:
+    """Test that main prints version when '--version' flag is used."""
+    with mock.patch(
+        "microfs.main.importlib.metadata.version", return_value=MICROFS_VERSION
+    ):
+        with (
+            mock.patch("sys.argv", ["ufs", "--version"]),
+            mock.patch("sys.stdout") as mock_stdout,
+            pytest.raises(SystemExit) as pytest_exc,
+        ):
+            main()
+        output = "".join(
+            call.args[0] for call in mock_stdout.write.call_args_list
+        )
+        assert f"microfs version: {MICROFS_VERSION}" in output
+        assert pytest_exc.type is SystemExit
+
+
+def test_main_handles_microbit_io_error() -> None:
+    """Test that MicroBitIOError is logged as an I/O error."""
+    with (
+        mock.patch("sys.argv", ["ufs", "ls"]),
+        mock.patch(
+            "microfs.main._run_command", side_effect=MicroBitIOError("io fail")
+        ),
+        mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
+    ):
+        mock_logger = mock_get_logger.return_value
+        main()
+        mock_logger.error.assert_called_with(
+            "An I/O error occurred with the BBC micro:bit device: %s", mock.ANY
+        )
+        assert "io fail" in str(mock_logger.error.call_args[0][1])
+
+
+def test_main_handles_microbit_not_found_error() -> None:
+    """Test that MicroBitNotFoundError is logged as device not connected."""
+    with (
+        mock.patch("sys.argv", ["ufs", "ls"]),
+        mock.patch(
+            "microfs.main._run_command",
+            side_effect=MicroBitNotFoundError("not found"),
+        ),
+        mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
+    ):
+        mock_logger = mock_get_logger.return_value
+        main()
+        mock_logger.error.assert_called_with(
+            "The BBC micro:bit device is not connected: %s", mock.ANY
+        )
+        assert "not found" in str(mock_logger.error.call_args[0][1])
+
+
+def test_main_handles_file_not_found_error() -> None:
+    """Test that FileNotFoundError is logged as file not found."""
+    with (
+        mock.patch("sys.argv", ["ufs", "ls"]),
+        mock.patch(
+            "microfs.main._run_command",
+            side_effect=FileNotFoundError("missing.txt"),
+        ),
+        mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
+    ):
+        mock_logger = mock_get_logger.return_value
+        main()
+        mock_logger.error.assert_called_with("File not found: %s", mock.ANY)
+        assert "missing.txt" in str(mock_logger.error.call_args[0][1])
+
+
+def test_main_handles_is_a_directory_error() -> None:
+    """Test that IsADirectoryError is logged as expected file but found directory."""
+    with (
+        mock.patch("sys.argv", ["ufs", "ls"]),
+        mock.patch(
+            "microfs.main._run_command", side_effect=IsADirectoryError("dir")
+        ),
+        mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
+    ):
+        mock_logger = mock_get_logger.return_value
+        main()
+        mock_logger.error.assert_called_with(
+            "Expected a file but found a directory: %s", mock.ANY
+        )
+        assert "dir" in str(mock_logger.error.call_args[0][1])
+
+
+def test_main_handles_generic_exception() -> None:
+    """Test that unknown exceptions are logged with logger.exception."""
+    with (
+        mock.patch("sys.argv", ["ufs", "ls"]),
+        mock.patch(
+            "microfs.main._run_command", side_effect=RuntimeError("boom")
+        ),
+        mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
+    ):
+        mock_logger = mock_get_logger.return_value
+        main()
+        mock_logger.exception.assert_called_with(
+            "An unknown error occurred during execution."
+        )

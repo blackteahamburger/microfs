@@ -3,8 +3,8 @@ requires = ["setuptools>=77.0.3"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "microfs"
-version = "1.5.0"
+name = "microfs2"
+version = "2.0.0"
 description = "A module and utility to work with the simple filesystem on the BBC micro:bit"
 readme = "README.rst"
 authors = [
@@ -41,4 +41,7 @@ dev = ["pytest>=5", "pytest-cov", "coverage", "sphinx", "ruff"]
 Homepage = "https://github.com/blackteahamburger/microfs"
 
 [project.scripts]
-ufs = "microfs:main"
+ufs = "microfs.main:main"
+
+[tool.coverage.run]
+omit = ["__main__.py"]

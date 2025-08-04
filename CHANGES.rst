@@ -1,16 +1,27 @@
 Release History
 ===============
 
-1.5.0
+2.0.0
 -----
 
 * When reading a file, byte strings can use single and double quotes.
-* Support for `--timeout` command line parameter and default value of timeout is adjusted to 10.
-* Support for `--version` flag and a `version` subcommand.
-* **API CHANGE**: Exception handling is now more granular. Introduced `MicroBitError`, `MicroBitIOError`, and `MicroBitNotFoundError` for micro:bit-specific errors, replacing generic `IOError` usage.
-* **API CHANGE**: The `put` and `get` functions now use `pathlib.Path` objects for local file arguments (`filename` and `target`), instead of plain strings.
-* **API CHANGE**: The `execute` function now returns only the stdout bytes (previously returned a tuple of (stdout, stderr)). Errors are now raised as exceptions instead of being returned.
-* **API CHANGE**: The `put` and `get` command-line interfaces now require `pathlib.Path` objects for file arguments.
+* The module is changed to be a package.
+* Support for `--timeout` command line parameter.
+  The default value of timeout is adjusted to 10.
+* Support for `--version` flag.
+* Support for `cp`, `mv`, `cat`, `du`, and `version` subcommands.
+* **API CHANGE**: Exception handling is now more granular. Introduced
+  `MicroBitError`, `MicroBitIOError`, and `MicroBitNotFoundError` for
+  micro:bit-specific errors, replacing generic `IOError` usage.
+* **API CHANGE**: The `ls`, `rm`, `put`, and `get` functions now return None
+  instead of True.
+* **API CHANGE**: The `put` and `get` functions now use `pathlib.Path` objects
+  for local file arguments (`filename` and `target`), instead of plain strings.
+* **API CHANGE**: The `execute` function now returns only the stdout bytes
+  (previously returned a tuple of (stdout, stderr)). Errors are now raised as
+  exceptions instead of being returned.
+* **API CHANGE**: The `put` and `get` command-line interfaces now require
+  `pathlib.Path` objects for file arguments.
 
 1.4.5
 -----

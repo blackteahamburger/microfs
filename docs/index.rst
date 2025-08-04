@@ -3,6 +3,10 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+=====================
+MicroFS Documentation
+=====================
+
 .. include:: ../README.rst
 
 .. include:: ../CONTRIBUTING.rst
@@ -10,12 +14,12 @@
 API
 ===
 
-.. automodule:: microfs
+.. automodule:: microfs.lib
     :members:
 
 .. include:: ../CHANGES.rst
 
 License
--------
+=======
 
 .. include:: ../LICENSE

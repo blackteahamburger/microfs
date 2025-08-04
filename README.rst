@@ -1,5 +1,5 @@
 MicroFS
--------
+=======
 
 A community fork of uflash. PR welcome!
 
@@ -7,29 +7,29 @@ A simple command line tool and module for interacting with the limited
 file system provided by MicroPython on the BBC micro:bit.
 
 Installation
-++++++++++++
+------------
 
 Download the source code and install the package using the following command::
 
     $ pip install .
 
 Usage
-+++++
+-----
 
 There are two ways to use microfs - as a module in your Python code or as a
 stand-alone command to use from your shell (``ufs``).
 
 In Code
-=======
+^^^^^^^
 
 In your Python script import the required functions like this::
 
-    from microfs import ls, rm, put, get, version, get_serial
+    from microfs.lib import ls, rm, cp, mv, cat, du, put, get, version, get_serial
 
 Read the API documentation below to learn how each of the functions works.
 
 Command Line
-============
+^^^^^^^^^^^^
 
 From the command line (but not the Python shell) use the "ufs" ("u" = micro)
 command.
@@ -38,11 +38,20 @@ To read the built-in help::
 
     $ ufs --help
 
+To see the version of microfs::
+
+    $ ufs --version
+
+To set the device timeout (default is 10 seconds)::
+
+    $ ufs --timeout 3 command
+
 List the files on the device::
 
     $ ufs ls
 
-You can also specify a delimiter to separte file names displayed on the output (default is whitespace ' ')::
+You can also specify a delimiter to separate file names displayed on the output
+(default is whitespace ' ')::
 
     # use ';' as a delimiter
     $ ufs ls ';'
@@ -50,6 +59,22 @@ You can also specify a delimiter to separte file names displayed on the output (
 Delete a file on the device::
 
     $ ufs rm foo.txt
+
+Copy a file from one location to another on the device::
+
+    $ ufs cp foo.txt bar.txt
+
+Move a file from one location to another on the device::
+
+    $ ufs mv foo.txt bar.txt
+
+Display the contents of a file on the device::
+
+    $ ufs cat foo.txt
+
+Get the size of a file on the device in bytes::
+
+    $ ufs du foo.txt
 
 Copy a file onto the device::
 
@@ -65,8 +90,12 @@ the name of the target file::
     $ ufs put /path/to/local.txt remote.txt
     $ ufs get remote.txt local.txt
 
+Get the version of the micro:bit firmware::
+
+    $ ufs version
+
 Development
-+++++++++++
+-----------
 
 The source code is hosted in GitHub. Please feel free to fork the repository.
 Assuming you have Git installed you can download the code from the canonical
@@ -81,4 +110,5 @@ run the following command::
 
 This also ensures that you have the correct dependencies for development.
 
-There is a Makefile that helps with most of the common workflows associated with development.
+There is a Makefile that helps with most of the common workflows associated
+with development.

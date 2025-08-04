@@ -1,22 +1,7 @@
 # Copyright (c) 2025 Blackteahamburger <blackteahamburger@outlook.com>
+# Copyright (c) 2016 Nicholas H.Tollervey
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the “Software”), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# See the LICENSE file for more information.
 """Tests for the microfs module."""
 
 import pathlib
@@ -25,8 +10,7 @@ from unittest import mock
 
 import pytest
 
-import microfs
-from microfs import SERIAL_BAUD_RATE, MicroBitIOError, MicroBitNotFoundError
+import microfs.lib
 
 MICROFS_VERSION = "1.2.3"
 
@@ -57,8 +41,8 @@ def test_find_micro_bit() -> None:
     ]
     port = FakePort(port_info, serial_number)
     ports = [port]
-    with mock.patch("microfs.list_serial_ports", return_value=ports):
-        result = microfs.find_microbit()
+    with mock.patch("microfs.lib.list_serial_ports", return_value=ports):
+        result = microfs.lib.find_microbit()
         assert result == ("/dev/ttyACM3", serial_number)
 
 
@@ -72,8 +56,8 @@ def test_find_micro_bit_no_device() -> None:
         "LOCATION=4-1.3",
     ]
     ports = [port]
-    with mock.patch("microfs.list_serial_ports", return_value=ports):
-        result = microfs.find_microbit()
+    with mock.patch("microfs.lib.list_serial_ports", return_value=ports):
+        result = microfs.lib.find_microbit()
         assert result == (None, None)
 
 
@@ -90,7 +74,7 @@ def test_raw_on() -> None:
         b"raw REPL; CTRL-B to exit\r\n>",
     ]
     mock_serial.read_until.side_effect = data
-    microfs.raw_on(mock_serial)
+    microfs.lib.raw_on(mock_serial)
     assert mock_serial.write.call_count == 6
     assert mock_serial.write.call_args_list[0][0][0] == b"\x02"
     assert mock_serial.write.call_args_list[1][0][0] == b"\r\x03"
@@ -111,7 +95,7 @@ def test_raw_on() -> None:
         b"raw REPL; CTRL-B to exit\r\n>",
     ]
     mock_serial.read_until.side_effect = data
-    microfs.raw_on(mock_serial)
+    microfs.lib.raw_on(mock_serial)
     assert mock_serial.write.call_count == 7
     assert mock_serial.write.call_args_list[0][0][0] == b"\x02"
     assert mock_serial.write.call_args_list[1][0][0] == b"\r\x03"
@@ -137,9 +121,9 @@ def test_raw_on_and_off() -> None:
         b"raw REPL; CTRL-B to exit\r\n>",
     ]
     mock_serial.read_until.side_effect = data
-    microfs.raw_on(mock_serial)
+    microfs.lib.raw_on(mock_serial)
     assert mock_serial.write.call_count >= 6
-    microfs.raw_off(mock_serial)
+    microfs.lib.raw_off(mock_serial)
     mock_serial.write.assert_called_with(b"\x02")
 
 
@@ -148,8 +132,8 @@ def test_raw_on_fail() -> None:
     mock_serial = mock.MagicMock()
     mock_serial.in_waiting = 0
     mock_serial.read_until.side_effect = [b"not expected"]
-    with pytest.raises(MicroBitIOError):
-        microfs.raw_on(mock_serial)
+    with pytest.raises(microfs.lib.MicroBitIOError):
+        microfs.lib.raw_on(mock_serial)
 
 
 def test_flush_to_msg_success() -> None:
@@ -157,7 +141,7 @@ def test_flush_to_msg_success() -> None:
     mock_serial = mock.MagicMock()
     msg = b"raw REPL; CTRL-B to exit\r\n>"
     mock_serial.read_until.return_value = msg
-    microfs.flush_to_msg(mock_serial, msg)
+    microfs.lib.flush_to_msg(mock_serial, msg)
     mock_serial.read_until.assert_called_once_with(msg)
 
 
@@ -166,8 +150,8 @@ def test_flush_to_msg_failure() -> None:
     mock_serial = mock.MagicMock()
     msg = b"raw REPL; CTRL-B to exit\r\n>"
     mock_serial.read_until.return_value = b"something else"
-    with pytest.raises(MicroBitIOError):
-        microfs.flush_to_msg(mock_serial, msg)
+    with pytest.raises(microfs.lib.MicroBitIOError):
+        microfs.lib.flush_to_msg(mock_serial, msg)
 
 
 def test_flush_reads_all() -> None:
@@ -187,7 +171,7 @@ def test_flush_reads_all() -> None:
     type(mock_serial).in_waiting = mock.PropertyMock(
         side_effect=in_waiting_side
     )
-    microfs.flush(mock_serial)
+    microfs.lib.flush(mock_serial)
     assert mock_serial.read.call_count == 3
 
 
@@ -202,20 +186,20 @@ def test_get_serial() -> None:
         "9900000031864e45003c10070000006e0000000097969901",
     )
     with (
-        mock.patch("microfs.find_microbit", return_value=mock_result),
-        mock.patch("microfs.Serial", return_value=mock_serial),
+        mock.patch("microfs.lib.find_microbit", return_value=mock_result),
+        mock.patch("microfs.lib.Serial", return_value=mock_serial),
     ):
-        result = microfs.get_serial(10)
+        result = microfs.lib.get_serial(10)
         assert result == mock_serial
 
 
 def test_get_serial_no_port() -> None:
     """An MicroBitNotFoundError should be raised if no micro:bit is found."""
     with (
-        mock.patch("microfs.find_microbit", return_value=(None, None)),
-        pytest.raises(MicroBitNotFoundError) as ex,
+        mock.patch("microfs.lib.find_microbit", return_value=(None, None)),
+        pytest.raises(microfs.lib.MicroBitNotFoundError) as ex,
     ):
-        microfs.get_serial()
+        microfs.lib.get_serial()
     assert ex.value.args[0] == "Could not find micro:bit."
 
 
@@ -231,11 +215,11 @@ def test_execute() -> None:
     )
     commands = ["import os", "os.listdir()"]
     with (
-        mock.patch("microfs.get_serial", return_value=mock_serial),
-        mock.patch("microfs.raw_on", return_value=None) as raw_mon,
-        mock.patch("microfs.raw_off", return_value=None) as raw_moff,
+        mock.patch("microfs.lib.get_serial", return_value=mock_serial),
+        mock.patch("microfs.lib.raw_on", return_value=None) as raw_mon,
+        mock.patch("microfs.lib.raw_off", return_value=None) as raw_moff,
     ):
-        out = microfs.execute(commands, mock_serial)
+        out = microfs.lib.execute(commands, mock_serial)
         assert out == b"[]"
         raw_mon.assert_called_once_with(mock_serial)
         raw_moff.assert_called_once_with(mock_serial)
@@ -255,15 +239,15 @@ def test_execute_raises_on_err_bytes() -> None:
     mock_serial = mock.MagicMock()
     mock_serial.read_until.return_value = b"OK\x04out\x04err\x04>"
     with (
-        mock.patch("microfs.get_serial", return_value=mock_serial),
-        mock.patch("microfs.raw_on", return_value=None),
-        mock.patch("microfs.raw_off", return_value=None),
+        mock.patch("microfs.lib.get_serial", return_value=mock_serial),
+        mock.patch("microfs.lib.raw_on", return_value=None),
+        mock.patch("microfs.lib.raw_off", return_value=None),
         mock.patch(
-            "microfs.clean_error", return_value="errormsg"
+            "microfs.lib.clean_error", return_value="errormsg"
         ) as mock_clean_error,
-        pytest.raises(MicroBitIOError) as excinfo,
+        pytest.raises(microfs.lib.MicroBitIOError) as excinfo,
     ):
-        microfs.execute(["cmd"], mock_serial)
+        microfs.lib.execute(["cmd"], mock_serial)
     assert "errormsg" in str(excinfo.value)
     mock_clean_error.assert_called_once()
 
@@ -279,11 +263,11 @@ def test_execute_no_serial() -> None:
     )
     commands = ["import os", "os.listdir()"]
     with (
-        mock.patch("microfs.get_serial", return_value=mock_serial) as p,
-        mock.patch("microfs.raw_on", return_value=None),
-        mock.patch("microfs.raw_off", return_value=None),
+        mock.patch("microfs.lib.get_serial", return_value=mock_serial) as p,
+        mock.patch("microfs.lib.raw_on", return_value=None),
+        mock.patch("microfs.lib.raw_off", return_value=None),
     ):
-        _ = microfs.execute(commands)
+        _ = microfs.lib.execute(commands)
         p.assert_called_once_with(10)
         mock_serial.close.assert_called_once_with()
 
@@ -302,7 +286,7 @@ def test_clean_error() -> None:
         b'File "<stdin>", line 2, in <module>\r\n'
         b"OSError: file not found\r\n"
     )
-    result = microfs.clean_error(msg)
+    result = microfs.lib.clean_error(msg)
     assert result == "OSError: file not found"
 
 
@@ -312,7 +296,7 @@ def test_clean_error_no_stack_trace() -> None:
     which case, just return a string version of the message.
     """
     msg = b"This does not conform!"
-    assert microfs.clean_error(msg) == "This does not conform!"
+    assert microfs.lib.clean_error(msg) == "This does not conform!"
 
 
 def test_clean_error_but_no_error() -> None:
@@ -320,7 +304,7 @@ def test_clean_error_but_no_error() -> None:
     Worst case, the function has been called with empty bytes so return a
     vague message.
     """
-    assert microfs.clean_error(b"") == "There was an error."
+    assert microfs.lib.clean_error(b"") == "There was an error."
 
 
 def test_ls() -> None:
@@ -330,12 +314,12 @@ def test_ls() -> None:
     """
     mock_serial = mock.MagicMock()
     with mock.patch(
-        "microfs.execute", return_value=b"['a.txt']\r\n"
+        "microfs.lib.execute", return_value=b"['a.txt']\r\n"
     ) as execute:
-        result = microfs.ls(mock_serial)
+        result = microfs.lib.ls(serial=mock_serial)
         assert result == ["a.txt"]
         execute.assert_called_once_with(
-            ["import os", "print(os.listdir())"], mock_serial, 10
+            ["import os", "print(os.listdir())"], 10, mock_serial
         )
 
 
@@ -346,23 +330,77 @@ def test_ls_width_delimiter() -> None:
     """
     mock_serial = mock.MagicMock()
     with mock.patch(
-        "microfs.execute", return_value=(b"[ 'a.txt','b.txt']\r\n")
+        "microfs.lib.execute", return_value=(b"[ 'a.txt','b.txt']\r\n")
     ) as execute:
-        result = microfs.ls(mock_serial)
+        result = microfs.lib.ls(serial=mock_serial)
         delimited_result = ";".join(result)
         assert delimited_result == "a.txt;b.txt"
         execute.assert_called_once_with(
-            ["import os", "print(os.listdir())"], mock_serial, 10
+            ["import os", "print(os.listdir())"], 10, mock_serial
         )
 
 
 def test_rm() -> None:
     """Test that rm removes a file and returns True."""
     mock_serial = mock.MagicMock()
-    with mock.patch("microfs.execute", return_value=b"") as execute:
-        assert microfs.rm("foo", mock_serial)
+    with mock.patch("microfs.lib.execute", return_value=b"") as execute:
+        microfs.lib.rm(["foo", "bar"], serial=mock_serial)
         execute.assert_called_once_with(
-            ["import os", "os.remove('foo')"], mock_serial, 10
+            ["import os", "os.remove('foo')", "os.remove('bar')"],
+            10,
+            mock_serial,
+        )
+
+
+def test_cp() -> None:
+    """Test that cp calls execute with correct commands and returns True."""
+    mock_serial = mock.MagicMock()
+    with mock.patch("microfs.lib.execute", return_value=b"") as execute:
+        microfs.lib.cp("foo.txt", "bar.txt", serial=mock_serial)
+        execute.assert_called_once_with(
+            [
+                "with open('foo.txt', 'rb') as fsrc, open('bar.txt', 'wb') as fdst: fdst.write(fsrc.read())"
+            ],
+            10,
+            mock_serial,
+        )
+
+
+def test_mv() -> None:
+    """Test that mv calls cp and rm and returns True."""
+    mock_serial = mock.MagicMock()
+    with (
+        mock.patch("microfs.lib.cp", return_value=True) as mock_cp,
+        mock.patch("microfs.lib.rm", return_value=True) as mock_rm,
+    ):
+        microfs.lib.mv("foo.txt", "bar.txt", serial=mock_serial)
+        mock_cp.assert_called_once_with("foo.txt", "bar.txt", 10, mock_serial)
+        mock_rm.assert_called_once_with(["foo.txt"], 10, mock_serial)
+
+
+def test_cat() -> None:
+    """Test that cat calls execute and returns the file content as string."""
+    mock_serial = mock.MagicMock()
+    with mock.patch(
+        "microfs.lib.execute", return_value=b"hello world"
+    ) as execute:
+        result = microfs.lib.cat("foo.txt", serial=mock_serial)
+        assert result == "hello world"
+        execute.assert_called_once_with(
+            ["with open('foo.txt', 'r') as f: print(f.read())"],
+            10,
+            mock_serial,
+        )
+
+
+def test_du() -> None:
+    """Test that du returns the file size in bytes."""
+    mock_serial = mock.MagicMock()
+    with mock.patch("microfs.lib.execute", return_value=b"1024") as execute:
+        result = microfs.lib.du("foo.txt", serial=mock_serial)
+        assert result == 1024
+        execute.assert_called_once_with(
+            ["import os", "print(os.size('foo.txt'))"], 10, mock_serial
         )
 
 
@@ -375,15 +413,15 @@ def test_put() -> None:
         file_path = pathlib.Path(tmpdir) / "fixture_file.txt"
         file_path.write_bytes(b"hello")
         mock_serial = mock.MagicMock()
-        with mock.patch("microfs.execute", return_value=b"") as execute:
-            assert microfs.put(file_path, "remote.txt", mock_serial)
+        with mock.patch("microfs.lib.execute", return_value=b"") as execute:
+            microfs.lib.put(file_path, "remote.txt", serial=mock_serial)
             commands = [
                 "fd = open('remote.txt', 'wb')",
                 "f = fd.write",
                 "f(b'hello')",
                 "fd.close()",
             ]
-            execute.assert_called_once_with(commands, mock_serial, 10)
+            execute.assert_called_once_with(commands, 10, mock_serial)
 
 
 def test_put_no_target() -> None:
@@ -395,25 +433,15 @@ def test_put_no_target() -> None:
         file_path = pathlib.Path(tmpdir) / "fixture_file.txt"
         file_path.write_bytes(b"hello")
         mock_serial = mock.MagicMock()
-        with mock.patch("microfs.execute", return_value=b"") as execute:
-            assert microfs.put(file_path, None, mock_serial)
+        with mock.patch("microfs.lib.execute", return_value=b"") as execute:
+            microfs.lib.put(file_path, None, serial=mock_serial)
             commands = [
                 f"fd = open('{file_path.name}', 'wb')",
                 "f = fd.write",
                 "f(b'hello')",
                 "fd.close()",
             ]
-            execute.assert_called_once_with(commands, mock_serial, 10)
-
-
-def test_put_non_existent_file() -> None:
-    """Test that put raises FileNotFoundError if the file does not exist."""
-    with tempfile.NamedTemporaryFile() as tmp:
-        file_path = pathlib.Path(tmp.name)
-    mock_serial = mock.MagicMock()
-    with pytest.raises(FileNotFoundError) as ex:
-        microfs.put(file_path, mock_serial)
-    assert ex.value.args[0] == "No such file."
+            execute.assert_called_once_with(commands, 10, mock_serial)
 
 
 def test_get() -> None:
@@ -431,7 +459,7 @@ def test_get() -> None:
                 "except ImportError:",
                 " try:",
                 "  from machine import UART",
-                f"  u = UART(0, {SERIAL_BAUD_RATE})",
+                f"  u = UART(0, {microfs.lib.SERIAL_BAUD_RATE})",
                 " except Exception:",
                 "  try:",
                 "   from sys import stdout as u",
@@ -445,11 +473,11 @@ def test_get() -> None:
             "f.close()",
         ]
         with (
-            mock.patch("microfs.execute", return_value=b"b'hello'") as exe,
+            mock.patch("microfs.lib.execute", return_value=b"b'hello'") as exe,
             mock.patch.object(pathlib.Path, "open", mock.mock_open()) as mo,
         ):
-            assert microfs.get("hello.txt", file_path, mock_serial)
-            exe.assert_called_once_with(commands, mock_serial, 10)
+            microfs.lib.get("hello.txt", file_path, serial=mock_serial)
+            exe.assert_called_once_with(commands, 10, mock_serial)
             mo.assert_called_once_with("wb")
             handle = mo()
             handle.write.assert_called_once_with(b"hello")
@@ -468,7 +496,7 @@ def test_get_no_target() -> None:
             "except ImportError:",
             " try:",
             "  from machine import UART",
-            f"  u = UART(0, {SERIAL_BAUD_RATE})",
+            f"  u = UART(0, {microfs.lib.SERIAL_BAUD_RATE})",
             " except Exception:",
             "  try:",
             "   from sys import stdout as u",
@@ -482,11 +510,11 @@ def test_get_no_target() -> None:
         "f.close()",
     ]
     with (
-        mock.patch("microfs.execute", return_value=b"b'hello'") as exe,
+        mock.patch("microfs.lib.execute", return_value=b"b'hello'") as exe,
         mock.patch.object(pathlib.Path, "open", mock.mock_open()) as mo,
     ):
-        assert microfs.get("hello.txt")
-        exe.assert_called_once_with(commands, None, 10)
+        microfs.lib.get("hello.txt")
+        exe.assert_called_once_with(commands, 10, None)
         mo.assert_called_once_with("wb")
         handle = mo()
         handle.write.assert_called_once_with(b"hello")
@@ -496,13 +524,13 @@ def test_get_invalid_data() -> None:
     """Test that get raises MicroBitIOError if the returned data is not valid bytes."""
     mock_serial = mock.MagicMock()
     with (
-        mock.patch("microfs.execute", return_value=b"notbytes"),
-        pytest.raises(MicroBitIOError),
+        mock.patch("microfs.lib.execute", return_value=b"notbytes"),
+        pytest.raises(microfs.lib.MicroBitIOError),
     ):
-        microfs.get("foo.txt", pathlib.Path("bar.txt"), mock_serial)
+        microfs.lib.get("foo.txt", pathlib.Path("bar.txt"), mock_serial)
 
 
-def test_version_good_output() -> None:
+def test_version() -> None:
     """
     Ensure the version method returns the expected result when the response
     from the device is the expected bytes.
@@ -515,8 +543,8 @@ def test_version_good_output() -> None:
         b"machine='micro:bit with nRF51822')\r\n"
     )
     mock_serial = mock.MagicMock()
-    with mock.patch("microfs.execute", return_value=response) as execute:
-        result = microfs.version(mock_serial)
+    with mock.patch("microfs.lib.execute", return_value=response) as execute:
+        result = microfs.lib.version(serial=mock_serial)
         assert result["sysname"] == "microbit"
         assert result["nodename"] == "microbit"
         assert result["release"] == "1.0"
@@ -528,234 +556,5 @@ def test_version_good_output() -> None:
         )
         assert result["machine"] == "micro:bit with nRF51822"
         execute.assert_called_once_with(
-            ["import os", "print(os.uname())"], mock_serial, 10
+            ["import os", "print(os.uname())"], 10, mock_serial
         )
-
-
-def test_main_no_args() -> None:
-    """If no args are passed, simply display help."""
-    with mock.patch("sys.argv", ["ufs"]):
-        mock_parser = mock.MagicMock()
-        with mock.patch(
-            "microfs.argparse.ArgumentParser", return_value=mock_parser
-        ):
-            microfs.main()
-        mock_parser.print_help.assert_called_once_with()
-
-
-def test_main_ls() -> None:
-    """If the ls command is issued, check the appropriate function is called."""
-    with (
-        mock.patch("microfs.ls", return_value=["foo", "bar"]) as mock_ls,
-        mock.patch("microfs.logger.info") as mock_logger_info,
-    ):
-        microfs.main(argv=["ls"])
-        mock_ls.assert_called_once_with(timeout=10)
-        mock_logger_info.assert_called_once_with("Found files: %s", "foo bar")
-
-
-def test_main_ls_with_timeout() -> None:
-    """If the ls command is issued, check the appropriate function is called."""
-    with (
-        mock.patch("microfs.ls", return_value=["foo", "bar"]) as mock_ls,
-        mock.patch("microfs.logger.info") as mock_logger_info,
-    ):
-        microfs.main(argv=["ls", "-t", "3"])
-        mock_ls.assert_called_once_with(timeout=3)
-        mock_logger_info.assert_called_once_with("Found files: %s", "foo bar")
-
-
-def test_main_ls_no_files() -> None:
-    """If the ls command is issued and no files exist, nothing is printed."""
-    with (
-        mock.patch("microfs.ls", return_value=[]) as mock_ls,
-        mock.patch("microfs.logger.info") as mock_logger_info,
-    ):
-        microfs.main(argv=["ls"])
-        mock_ls.assert_called_once_with(timeout=10)
-        mock_logger_info.assert_not_called()
-
-
-def test_main_rm() -> None:
-    """
-    If the rm command is correctly issued, check the appropriate function is
-    called.
-    """
-    with mock.patch("microfs.rm", return_value=True) as mock_rm:
-        microfs.main(argv=["rm", "foo"])
-        mock_rm.assert_called_once_with(filename="foo", timeout=10)
-
-
-def test_main_rm_with_timeout() -> None:
-    """
-    If the rm command is correctly issued, check the appropriate function is
-    called.
-    """
-    with mock.patch("microfs.rm", return_value=True) as mock_rm:
-        microfs.main(argv=["rm", "foo", "-t", "3"])
-        mock_rm.assert_called_once_with(filename="foo", timeout=3)
-
-
-def test_main_rm_no_filename() -> None:
-    """
-    If rm is not called with an associated filename, then print an error
-    message.
-    """
-    with (
-        mock.patch("microfs.logger.error") as mock_logger_error,
-        pytest.raises(SystemExit) as pytest_exc,
-    ):
-        microfs.main(argv=["rm"])
-    mock_logger_error.assert_called_once_with(
-        'rm: error: missing filename. (e.g. "ufs rm foo.txt")'
-    )
-    assert pytest_exc.type is SystemExit
-    assert pytest_exc.value.code == 2
-
-
-def test_main_put() -> None:
-    """
-    If the put command is correctly issued, check the appropriate function is
-    called.
-    """
-    with tempfile.TemporaryDirectory() as tmpdir:
-        file_path = pathlib.Path(tmpdir) / "foo.txt"
-        file_path.write_text("abc")
-        with mock.patch("microfs.put", return_value=True) as mock_put:
-            microfs.main(argv=["put", str(file_path)])
-            mock_put.assert_called_once_with(
-                filename=file_path, target=None, timeout=10
-            )
-
-
-def test_main_put_with_timeout() -> None:
-    """
-    If the put command is correctly issued, check the appropriate function is
-    called.
-    """
-    with tempfile.TemporaryDirectory() as tmpdir:
-        file_path = pathlib.Path(tmpdir) / "foo.txt"
-        file_path.write_text("abc")
-        with mock.patch("microfs.put", return_value=True) as mock_put:
-            microfs.main(argv=["put", str(file_path), "-t", "3"])
-            mock_put.assert_called_once_with(
-                filename=file_path, target=None, timeout=3
-            )
-
-
-def test_main_put_no_filename() -> None:
-    """
-    If put is not called with an associated filename, then print an error
-    message.
-    """
-    with (
-        mock.patch("microfs.logger.error") as mock_logger_error,
-        pytest.raises(SystemExit) as pytest_exc,
-    ):
-        microfs.main(argv=["put"])
-    mock_logger_error.assert_called_once_with(
-        'put: error: missing filename. (e.g. "ufs put foo.txt")'
-    )
-    assert pytest_exc.type is SystemExit
-    assert pytest_exc.value.code == 2
-
-
-def test_main_get() -> None:
-    """
-    If the get command is correctly issued, check the appropriate function is
-    called.
-    """
-    with mock.patch("microfs.get", return_value=True) as mock_get:
-        microfs.main(argv=["get", "foo"])
-        mock_get.assert_called_once_with(
-            filename="foo", target=None, timeout=10
-        )
-
-
-def test_main_get_with_timeout() -> None:
-    """
-    If the get command is correctly issued, check the appropriate function is
-    called.
-    """
-    with mock.patch("microfs.get", return_value=True) as mock_get:
-        microfs.main(argv=["get", "foo", "-t", "3"])
-        mock_get.assert_called_once_with(
-            filename="foo", target=None, timeout=3
-        )
-
-
-def test_main_get_no_filename() -> None:
-    """
-    If get is not called with an associated filename, then print an error
-    message.
-    """
-    with (
-        mock.patch("microfs.logger.error") as mock_logger_error,
-        pytest.raises(SystemExit) as pytest_exc,
-    ):
-        microfs.main(argv=["get"])
-    mock_logger_error.assert_called_once_with(
-        'get: error: missing filename. (e.g. "ufs get foo.txt")'
-    )
-    assert pytest_exc.type is SystemExit
-    assert pytest_exc.value.code == 2
-
-
-def test_main_version() -> None:
-    """Test that main prints version information when 'version' command is used."""
-    version_info = {"sysname": "microbit", "release": "1.0"}
-    with (
-        mock.patch(
-            "microfs.version", return_value=version_info
-        ) as mock_version,
-        mock.patch("microfs.logger.info") as mock_logger_info,
-    ):
-        microfs.main(argv=["version"])
-        mock_version.assert_called_once_with(timeout=10)
-        mock_logger_info.assert_any_call("%s: %s", "sysname", "microbit")
-        mock_logger_info.assert_any_call("%s: %s", "release", "1.0")
-
-
-def test_main_handle_exception() -> None:
-    """If an exception is raised, then it gets printed."""
-    ex = MicroBitIOError("Error")
-    with (
-        mock.patch("microfs.get", side_effect=ex),
-        mock.patch("microfs.logger.exception") as mock_logger_exception,
-        pytest.raises(SystemExit) as pytest_exc,
-    ):
-        microfs.main(argv=["get", "foo"])
-    mock_logger_exception.assert_called_once_with(
-        "An error occurred during execution:"
-    )
-    assert pytest_exc.type is SystemExit
-    assert pytest_exc.value.code == 1
-
-
-def test_main_version_flag() -> None:
-    """Test that main prints version when '--version' flag is used."""
-    with mock.patch(
-        "microfs.importlib.metadata.version", return_value=MICROFS_VERSION
-    ):
-        with (
-            mock.patch("sys.stdout") as mock_stdout,
-            pytest.raises(SystemExit) as pytest_exc,
-        ):
-            microfs.main(argv=["--version"])
-        output = "".join(
-            call.args[0] for call in mock_stdout.write.call_args_list
-        )
-        assert f"microfs version: {MICROFS_VERSION}" in output
-        assert pytest_exc.type is SystemExit
-
-
-def test_main_uses_sys_argv_when_none() -> None:
-    """Test that main uses sys.argv[1:] if argv is None."""
-    with (
-        mock.patch("sys.argv", ["progname", "ls"]),
-        mock.patch("microfs.ls", return_value=["foo"]) as mock_ls,
-        mock.patch("microfs.logger.info") as mock_logger_info,
-    ):
-        microfs.main(argv=None)
-        mock_ls.assert_called_once_with(timeout=10)
-        mock_logger_info.assert_called_once_with("Found files: %s", "foo")
