@@ -8,16 +8,13 @@ from __future__ import annotations
 
 import pathlib
 import tempfile
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from unittest import mock
 
 import pytest
 import serial
 
 import microfs.lib
-
-if TYPE_CHECKING:
-    from collections.abc import Generator
 
 
 def _init_serial_attrs(
@@ -30,36 +27,6 @@ def _init_serial_attrs(
     obj._timeout = timeout
     obj.timeout = timeout
     obj.portstr = port
-
-
-@pytest.fixture(autouse=True)
-def patch_serial_init() -> Generator[None, Any]:
-    """Patch serial.Serial.__init__ to avoid actual serial port access."""
-    with (
-        mock.patch("serial.Serial.__init__") as init_patch,
-        mock.patch("serial.Serial.open", return_value=None),
-        mock.patch("serial.Serial.close", return_value=None),
-    ):
-
-        def fake_init(  # noqa: PLR0913, PLR0917
-            self: serial.Serial,
-            port: str | None = None,
-            baudrate: int = 115200,
-            bytesize: int = 8,
-            parity: str = "N",
-            stopbits: int = 1,
-            timeout: int = 10,
-            *a: Any,  # noqa: ANN401
-            **k: Any,  # noqa: ANN401
-        ) -> None:
-            self._port = port  # pyright: ignore[reportAttributeAccessIssue]
-            self.is_open = False
-            self._timeout = timeout  # pyright: ignore[reportAttributeAccessIssue]
-            self.timeout = timeout
-            self.portstr = port
-
-        init_patch.side_effect = fake_init
-        yield
 
 
 def test_find_micro_bit() -> None:
