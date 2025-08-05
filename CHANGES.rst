@@ -10,6 +10,9 @@ Release History
   The default value of timeout is adjusted to 10.
 * Support for `--version` flag.
 * Support for `cp`, `mv`, `cat`, `du`, and `version` subcommands.
+* **API CHANGE**: New `MicroBitSerial` class to manage serial connections.
+  Functions now accept `MicroBitSerial` instances instead of raw
+  `serial.Serial` objects.
 * **API CHANGE**: Exception handling is now more granular. Introduced
   `MicroBitError`, `MicroBitIOError`, and `MicroBitNotFoundError` for
   micro:bit-specific errors, replacing generic `IOError` usage.
