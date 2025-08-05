@@ -3,6 +3,7 @@ from collections.abc import Callable as Callable
 
 from microfs.lib import MicroBitIOError as MicroBitIOError
 from microfs.lib import MicroBitNotFoundError as MicroBitNotFoundError
+from microfs.lib import MicroBitSerial as MicroBitSerial
 from microfs.lib import cat as cat
 from microfs.lib import cp as cp
 from microfs.lib import du as du

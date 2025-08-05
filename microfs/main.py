@@ -11,9 +11,12 @@ import pathlib
 import sys
 from typing import TYPE_CHECKING
 
+from serial import SerialException, SerialTimeoutException
+
 from microfs.lib import (
     MicroBitIOError,
     MicroBitNotFoundError,
+    MicroBitSerial,
     cat,
     cp,
     du,
@@ -30,41 +33,41 @@ if TYPE_CHECKING:
 
 
 def _handle_ls(args: argparse.Namespace) -> None:
-    list_of_files = ls(args.timeout)
+    list_of_files = ls(args.timeout, args.serial)
     if list_of_files:
         print(args.delimiter.join(list_of_files))  # noqa: T201
 
 
 def _handle_cp(args: argparse.Namespace) -> None:
-    cp(args.src, args.dst, args.timeout)
+    cp(args.src, args.dst, args.timeout, args.serial)
 
 
 def _handle_mv(args: argparse.Namespace) -> None:
-    mv(args.src, args.dst, args.timeout)
+    mv(args.src, args.dst, args.timeout, args.serial)
 
 
 def _handle_rm(args: argparse.Namespace) -> None:
-    rm(args.paths, args.timeout)
+    rm(args.paths, args.timeout, args.serial)
 
 
 def _handle_cat(args: argparse.Namespace) -> None:
-    print(cat(args.path, args.timeout))  # noqa: T201
+    print(cat(args.path, args.timeout, args.serial))  # noqa: T201
 
 
 def _handle_du(args: argparse.Namespace) -> None:
-    print(du(args.path, args.timeout))  # noqa: T201
+    print(du(args.path, args.timeout, args.serial))  # noqa: T201
 
 
 def _handle_put(args: argparse.Namespace) -> None:
-    put(args.path, args.target, args.timeout)
+    put(args.path, args.target, args.timeout, args.serial)
 
 
 def _handle_get(args: argparse.Namespace) -> None:
-    get(args.path, args.target, args.timeout)
+    get(args.path, args.target, args.timeout, args.serial)
 
 
 def _handle_version(args: argparse.Namespace) -> None:
-    version_info = version(args.timeout)
+    version_info = version(args.timeout, args.serial)
     for key, value in version_info.items():
         print(f"{key}: {value}")  # noqa: T201
 
@@ -107,6 +110,12 @@ The following commands are available:
         help="Device response timeout in seconds.\nDefault to 10.",
         default=10,
     )
+    parser.add_argument(
+        "--serial",
+        type=str,
+        help="Specify the serial port of micro:bit (e.g. /dev/ttyACM0).",
+        default=None,
+    )
 
     subparsers = parser.add_subparsers(
         dest="command", help="Available commands", required=True
@@ -120,7 +129,7 @@ The following commands are available:
         "--delimiter",
         nargs="?",
         default=" ",
-        help='Specify a delimiter string (default is whitespace). Eg. ";"',
+        help='Specify a delimiter string (e.g. ";")\nDefaults to whitespace)',
     )
 
     rm_parser = subparsers.add_parser(
@@ -188,6 +197,15 @@ The following commands are available:
 
 
 def _run_command(args: argparse.Namespace) -> None:
+    if args.serial is not None:
+        args.serial = MicroBitSerial(args.serial, timeout=args.timeout)
+        with args.serial:
+            _dispatch_command(args)
+    else:
+        _dispatch_command(args)
+
+
+def _dispatch_command(args: argparse.Namespace) -> None:
     handlers: dict[str, Callable[..., None]] = {
         "ls": _handle_ls,
         "rm": _handle_rm,
@@ -218,6 +236,10 @@ def main() -> None:
         )
     except MicroBitNotFoundError as e:
         logger.error("The BBC micro:bit device is not connected: %s", e)  # noqa: TRY400
+    except SerialTimeoutException as e:
+        logger.error("Serial communication timed out: %s", e)  # noqa: TRY400
+    except SerialException as e:
+        logger.error("Serial communication error: %s", e)  # noqa: TRY400
     except FileNotFoundError as e:
         logger.error("File not found: %s", e)  # noqa: TRY400
     except IsADirectoryError as e:

@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 from unittest import mock
 
 import pytest
+import serial
 
 from microfs.lib import MicroBitIOError, MicroBitNotFoundError
 from microfs.main import main
@@ -24,7 +25,7 @@ MICROFS_VERSION = "2.0.0"
 
 @pytest.fixture(autouse=True)
 def patch_importlib_metadata_version() -> Generator[None, Any]:
-    """Fixture to patch importlib.metadata.version to return MICROFS_VERSION."""
+    """Fixture: patch importlib.metadata.version to return MICROFS_VERSION."""
     with mock.patch(
         "microfs.main.importlib.metadata.version", return_value=MICROFS_VERSION
     ):
@@ -38,18 +39,20 @@ def test_main_timeout() -> None:
         mock.patch("microfs.main.ls") as mock_ls,
     ):
         main()
-        mock_ls.assert_called_once_with(10)
+        mock_ls.assert_called_once_with(10, None)
 
 
-def test_main_ls() -> None:
-    """If the ls command is issued, check the appropriate function is called."""
+def test_main_serial() -> None:
+    """Test ls command with --serial flag passes MicroBitSerial."""
     with (
-        mock.patch("sys.argv", ["ufs", "ls"]),
+        mock.patch("sys.argv", ["ufs", "--serial", "/dev/ttyACM0", "ls"]),
         mock.patch("microfs.main.ls", return_value=["foo", "bar"]) as mock_ls,
+        mock.patch("microfs.main.MicroBitSerial") as mock_serial_class,
         mock.patch.object(builtins, "print") as mock_print,
     ):
+        mock_serial_instance = mock_serial_class.return_value
         main()
-        mock_ls.assert_called_once_with(10)
+        mock_ls.assert_called_once_with(10, mock_serial_instance)
         mock_print.assert_called_once_with("foo bar")
 
 
@@ -61,52 +64,53 @@ def test_main_ls_no_files() -> None:
         mock.patch.object(builtins, "print") as mock_print,
     ):
         main()
-        mock_ls.assert_called_once_with(10)
+        mock_ls.assert_called_once_with(10, None)
         mock_print.assert_not_called()
 
 
 def test_main_rm() -> None:
     """
-    If the rm command is correctly issued, check the appropriate function is
-    called.
+    If the rm command is correctly issued.
+
+    Check the appropriate function is called.
     """
     with (
         mock.patch("sys.argv", ["ufs", "rm", "foo", "bar"]),
         mock.patch("microfs.main.rm", return_value=True) as mock_rm,
     ):
         main()
-        mock_rm.assert_called_once_with(["foo", "bar"], 10)
+        mock_rm.assert_called_once_with(["foo", "bar"], 10, None)
 
 
 def test_main_cp() -> None:
-    """Test that the cp command calls the cp function with correct arguments."""
+    """Test cp command calls cp function with correct arguments."""
     with (
         mock.patch("sys.argv", ["ufs", "cp", "foo.txt", "bar.txt"]),
         mock.patch("microfs.main.cp", return_value=True) as mock_cp,
     ):
         main()
-        mock_cp.assert_called_once_with("foo.txt", "bar.txt", 10)
+        mock_cp.assert_called_once_with("foo.txt", "bar.txt", 10, None)
 
 
 def test_main_mv() -> None:
-    """Test that the mv command calls the mv function with correct arguments."""
+    """Test mv command calls mv function with correct arguments."""
     with (
         mock.patch("sys.argv", ["ufs", "mv", "foo.txt", "bar.txt"]),
         mock.patch("microfs.main.mv", return_value=True) as mock_mv,
     ):
         main()
-        mock_mv.assert_called_once_with("foo.txt", "bar.txt", 10)
+        mock_mv.assert_called_once_with("foo.txt", "bar.txt", 10, None)
 
 
 def test_main_cat() -> None:
-    """Test that the cat command calls the cat function and prints the content."""
+    """Test cat command calls cat function and prints the content."""
     with (
         mock.patch("sys.argv", ["ufs", "cat", "foo.txt"]),
         mock.patch("microfs.main.cat", return_value="filecontent") as mock_cat,
         mock.patch.object(builtins, "print") as mock_print,
     ):
         main()
-        mock_cat.assert_called_once_with("foo.txt", 10)
+        mock_cat.assert_called_once_with("foo.txt", 10, None)
         mock_print.assert_called_once_with("filecontent")
 
 
@@ -118,38 +122,40 @@ def test_main_du() -> None:
         mock.patch.object(builtins, "print") as mock_print,
     ):
         main()
-        mock_du.assert_called_once_with("foo.txt", 10)
+        mock_du.assert_called_once_with("foo.txt", 10, None)
         mock_print.assert_called_once_with(1024)
 
 
 def test_main_put() -> None:
     """
-    If the put command is correctly issued, check the appropriate function is
-    called.
+    If the put command is correctly issued.
+
+    Check the appropriate function is called.
     """
     with (
         mock.patch("sys.argv", ["ufs", "put", "foo"]),
         mock.patch("microfs.main.put", return_value=True) as mock_put,
     ):
         main()
-        mock_put.assert_called_once_with(pathlib.Path("foo"), None, 10)
+        mock_put.assert_called_once_with(pathlib.Path("foo"), None, 10, None)
 
 
 def test_main_get() -> None:
     """
-    If the get command is correctly issued, check the appropriate function is
-    called.
+    If the get command is correctly issued.
+
+    Check the appropriate function is called.
     """
     with (
         mock.patch("sys.argv", ["ufs", "get", "foo"]),
         mock.patch("microfs.main.get", return_value=True) as mock_get,
     ):
         main()
-        mock_get.assert_called_once_with("foo", None, 10)
+        mock_get.assert_called_once_with("foo", None, 10, None)
 
 
 def test_main_version() -> None:
-    """Test that main prints version information when 'version' command is used."""
+    """Test main prints version info when 'version' command is used."""
     version_info = {"sysname": "microbit", "release": "1.0"}
     with (
         mock.patch("sys.argv", ["ufs", "version"]),
@@ -159,7 +165,7 @@ def test_main_version() -> None:
         mock.patch.object(builtins, "print") as mock_print,
     ):
         main()
-        mock_version.assert_called_once_with(10)
+        mock_version.assert_called_once_with(10, None)
         mock_print.assert_any_call(f"sysname: {version_info['sysname']}")
         mock_print.assert_any_call(f"release: {version_info['release']}")
 
@@ -229,7 +235,7 @@ def test_main_handles_file_not_found_error() -> None:
 
 
 def test_main_handles_is_a_directory_error() -> None:
-    """Test that IsADirectoryError is logged as expected file but found directory."""
+    """Test that IsADirectoryError logs 'expected file but found directory'."""
     with (
         mock.patch("sys.argv", ["ufs", "ls"]),
         mock.patch(
@@ -259,3 +265,39 @@ def test_main_handles_generic_exception() -> None:
         mock_logger.exception.assert_called_with(
             "An unknown error occurred during execution."
         )
+
+
+def test_main_handles_serial_exception() -> None:
+    """Test that SerialException is logged as serial communication error."""
+    with (
+        mock.patch("sys.argv", ["ufs", "ls"]),
+        mock.patch(
+            "microfs.main._run_command",
+            side_effect=serial.SerialException("fail"),
+        ),
+        mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
+    ):
+        mock_logger = mock_get_logger.return_value
+        main()
+        mock_logger.error.assert_called_with(
+            "Serial communication error: %s", mock.ANY
+        )
+        assert "fail" in str(mock_logger.error.call_args[0][1])
+
+
+def test_main_handles_serial_timeout_exception() -> None:
+    """Test that SerialTimeoutException is logged as timeout."""
+    with (
+        mock.patch("sys.argv", ["ufs", "ls"]),
+        mock.patch(
+            "microfs.main._run_command",
+            side_effect=serial.SerialTimeoutException("timeout"),
+        ),
+        mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
+    ):
+        mock_logger = mock_get_logger.return_value
+        main()
+        mock_logger.error.assert_called_with(
+            "Serial communication timed out: %s", mock.ANY
+        )
+        assert "timeout" in str(mock_logger.error.call_args[0][1])

@@ -1,53 +1,93 @@
 # Copyright (c) 2025 Blackteahamburger <blackteahamburger@outlook.com>
 import pathlib
-from typing import Final
+from collections.abc import Iterable
+from types import TracebackType
+from typing import Final, Self
 
+from _typeshed import ReadableBuffer as ReadableBuffer
 from serial import Serial
-
-SERIAL_BAUD_RATE: Final[int]
+from serial.tools.list_ports_linux import SysFS as SysFS
 
 class MicroBitError(OSError): ...
 class MicroBitIOError(MicroBitError): ...
 class MicroBitNotFoundError(MicroBitError): ...
 
-def find_microbit() -> tuple[str, str | None] | tuple[None, None]: ...
-def flush_to_msg(serial: Serial, msg: bytes) -> None: ...
-def flush(serial: Serial) -> None: ...
-def raw_on(serial: Serial) -> None: ...
-def raw_off(serial: Serial) -> None: ...
-def get_serial(timeout: int = 10) -> Serial: ...
-def clean_error(err: bytes) -> str: ...
+class MicroBitSerial(Serial):
+    SERIAL_BAUD_RATE: Final[int]
+    DEFAULT_TIMEOUT: Final[int]
+    def __init__(
+        self,
+        port: str | None = None,
+        baudrate: int = ...,
+        bytesize: int = ...,
+        parity: str = ...,
+        stopbits: int = ...,
+        timeout: int = ...,
+        xonxoff: bool = False,
+        rtscts: bool = False,
+        write_timeout: float | None = None,
+        dsrdtr: bool = False,
+        inter_byte_timeout: float | None = None,
+        exclusive: bool | None = None,
+        **kwargs: float,
+    ) -> None: ...
+    @staticmethod
+    def find_microbit() -> SysFS | None: ...
+    @classmethod
+    def get_serial(cls, timeout: int = 10) -> Self: ...
+    def __enter__(self) -> Self: ...
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None: ...
+    def close(self) -> None: ...
+    def write(self, b: ReadableBuffer) -> int | None: ...
+    def flush_to_msg(self, msg: bytes) -> None: ...
+    def flush(self) -> None: ...
+    def raw_on(self) -> None: ...
+    def raw_off(self) -> None: ...
+    def write_command(self, command: str) -> bytes: ...
+    def write_commands(self, commands: Iterable[str]) -> bytes: ...
+
 def execute(
-    commands: list[str], timeout: int = 10, serial: Serial | None = None
+    commands: Iterable[str],
+    timeout: int = 10,
+    serial: MicroBitSerial | None = None,
 ) -> bytes: ...
-def ls(timeout: int = 10, serial: Serial | None = None) -> list[str]: ...
+def ls(
+    timeout: int = 10, serial: MicroBitSerial | None = None
+) -> list[str]: ...
 def cp(
-    src: str, dst: str, timeout: int = 10, serial: Serial | None = None
+    src: str, dst: str, timeout: int = 10, serial: MicroBitSerial | None = None
 ) -> None: ...
 def mv(
-    src: str, dst: str, timeout: int = 10, serial: Serial | None = None
+    src: str, dst: str, timeout: int = 10, serial: MicroBitSerial | None = None
 ) -> None: ...
 def rm(
-    filenames: list[str], timeout: int = 10, serial: Serial | None = None
+    filenames: Iterable[str],
+    timeout: int = 10,
+    serial: MicroBitSerial | None = None,
 ) -> None: ...
 def cat(
-    filename: str, timeout: int = 10, serial: Serial | None = None
+    filename: str, timeout: int = 10, serial: MicroBitSerial | None = None
 ) -> str: ...
 def du(
-    filename: str, timeout: int = 10, serial: Serial | None = None
+    filename: str, timeout: int = 10, serial: MicroBitSerial | None = None
 ) -> int: ...
 def put(
     filename: pathlib.Path,
     target: str | None = None,
     timeout: int = 10,
-    serial: Serial | None = None,
+    serial: MicroBitSerial | None = None,
 ) -> None: ...
 def get(
     filename: str,
     target: pathlib.Path | None = None,
     timeout: int = 10,
-    serial: Serial | None = None,
+    serial: MicroBitSerial | None = None,
 ) -> None: ...
 def version(
-    timeout: int = 10, serial: Serial | None = None
+    timeout: int = 10, serial: MicroBitSerial | None = None
 ) -> dict[str, str]: ...
