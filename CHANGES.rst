@@ -11,8 +11,18 @@ Release History
 * Support for `--version` flag.
 * Support for `cp`, `mv`, `cat`, `du`, and `version` subcommands.
 * **API CHANGE**: New `MicroBitSerial` class to manage serial connections.
-  Functions now accept `MicroBitSerial` instances instead of raw
-  `serial.Serial` objects.
+  Related functions have become methods of this class.
+* **API CHANGE**: Functions now accept `MicroBitSerial` instances instead
+  of raw `serial.Serial` objects.
+* **API CHANGE**: Functions are not accepting None as a serial argument.
+  A `MicroBitSerial` instance must be provided.
+  Use `MicroBitSerial.get_serial()` to get a serial connection
+  of the detected micro:bit.
+* **API CHANGE**: The order of arguments for `put` and `get` functions
+  has changed. The local file argument comes first, followed by the
+  `MicroBitSerial` instance, and then the optional target filename.
+* **API CHANGE**: The `find_microbit` function now returns the port
+  (previously returned a tuple of (port string, serial number)).
 * **API CHANGE**: Exception handling is now more granular. Introduced
   `MicroBitError`, `MicroBitIOError`, and `MicroBitNotFoundError` for
   micro:bit-specific errors, replacing generic `IOError` usage.
@@ -25,6 +35,7 @@ Release History
   exceptions instead of being returned.
 * **API CHANGE**: The `put` and `get` command-line interfaces now require
   `pathlib.Path` objects for file arguments.
+* ... See the file docstring and function docstrings for more details.
 
 1.4.5
 -----

@@ -33,41 +33,41 @@ if TYPE_CHECKING:
 
 
 def _handle_ls(args: argparse.Namespace) -> None:
-    list_of_files = ls(args.timeout, args.serial)
+    list_of_files = ls(args.serial)
     if list_of_files:
         print(args.delimiter.join(list_of_files))  # noqa: T201
 
 
 def _handle_cp(args: argparse.Namespace) -> None:
-    cp(args.src, args.dst, args.timeout, args.serial)
+    cp(args.src, args.dst, args.serial)
 
 
 def _handle_mv(args: argparse.Namespace) -> None:
-    mv(args.src, args.dst, args.timeout, args.serial)
+    mv(args.src, args.dst, args.serial)
 
 
 def _handle_rm(args: argparse.Namespace) -> None:
-    rm(args.paths, args.timeout, args.serial)
+    rm(args.paths, args.serial)
 
 
 def _handle_cat(args: argparse.Namespace) -> None:
-    print(cat(args.path, args.timeout, args.serial))  # noqa: T201
+    print(cat(args.path, args.serial))  # noqa: T201
 
 
 def _handle_du(args: argparse.Namespace) -> None:
-    print(du(args.path, args.timeout, args.serial))  # noqa: T201
+    print(du(args.path, args.serial))  # noqa: T201
 
 
 def _handle_put(args: argparse.Namespace) -> None:
-    put(args.path, args.target, args.timeout, args.serial)
+    put(args.path, args.serial, args.target)
 
 
 def _handle_get(args: argparse.Namespace) -> None:
-    get(args.path, args.target, args.timeout, args.serial)
+    get(args.path, args.serial, args.target)
 
 
 def _handle_version(args: argparse.Namespace) -> None:
-    version_info = version(args.timeout, args.serial)
+    version_info = version(args.serial)
     for key, value in version_info.items():
         print(f"{key}: {value}")  # noqa: T201
 
@@ -199,9 +199,9 @@ The following commands are available:
 def _run_command(args: argparse.Namespace) -> None:
     if args.serial is not None:
         args.serial = MicroBitSerial(args.serial, timeout=args.timeout)
-        with args.serial:
-            _dispatch_command(args)
     else:
+        args.serial = MicroBitSerial.get_serial()
+    with args.serial:
         _dispatch_command(args)
 
 

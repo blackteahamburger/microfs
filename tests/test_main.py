@@ -36,10 +36,18 @@ def test_main_timeout() -> None:
     """Test that the default timeout is set to 10 seconds."""
     with (
         mock.patch("sys.argv", ["ufs", "ls"]),
-        mock.patch("microfs.main.ls") as mock_ls,
+        mock.patch("microfs.main.ls", return_value=["foo", "bar"]) as mock_ls,
+        mock.patch("microfs.main.MicroBitSerial") as mock_serial_class,
+        mock.patch.object(builtins, "print") as mock_print,
+        mock.patch(
+            "microfs.main.MicroBitSerial.get_serial",
+            return_value=mock_serial_class.return_value,
+        ),
     ):
+        mock_serial_instance = mock_serial_class.return_value
         main()
-        mock_ls.assert_called_once_with(10, None)
+        mock_ls.assert_called_once_with(mock_serial_instance)
+        mock_print.assert_called_once_with("foo bar")
 
 
 def test_main_serial() -> None:
@@ -49,10 +57,14 @@ def test_main_serial() -> None:
         mock.patch("microfs.main.ls", return_value=["foo", "bar"]) as mock_ls,
         mock.patch("microfs.main.MicroBitSerial") as mock_serial_class,
         mock.patch.object(builtins, "print") as mock_print,
+        mock.patch(
+            "microfs.main.MicroBitSerial.get_serial",
+            return_value=mock_serial_class.return_value,
+        ),
     ):
         mock_serial_instance = mock_serial_class.return_value
         main()
-        mock_ls.assert_called_once_with(10, mock_serial_instance)
+        mock_ls.assert_called_once_with(mock_serial_instance)
         mock_print.assert_called_once_with("foo bar")
 
 
@@ -62,9 +74,15 @@ def test_main_ls_no_files() -> None:
         mock.patch("sys.argv", ["ufs", "ls"]),
         mock.patch("microfs.main.ls", return_value=[]) as mock_ls,
         mock.patch.object(builtins, "print") as mock_print,
+        mock.patch("microfs.main.MicroBitSerial") as mock_serial_class,
+        mock.patch(
+            "microfs.main.MicroBitSerial.get_serial",
+            return_value=mock_serial_class.return_value,
+        ),
     ):
+        mock_serial_instance = mock_serial_class.return_value
         main()
-        mock_ls.assert_called_once_with(10, None)
+        mock_ls.assert_called_once_with(mock_serial_instance)
         mock_print.assert_not_called()
 
 
@@ -77,9 +95,15 @@ def test_main_rm() -> None:
     with (
         mock.patch("sys.argv", ["ufs", "rm", "foo", "bar"]),
         mock.patch("microfs.main.rm", return_value=True) as mock_rm,
+        mock.patch("microfs.main.MicroBitSerial") as mock_serial_class,
+        mock.patch(
+            "microfs.main.MicroBitSerial.get_serial",
+            return_value=mock_serial_class.return_value,
+        ),
     ):
+        mock_serial_instance = mock_serial_class.return_value
         main()
-        mock_rm.assert_called_once_with(["foo", "bar"], 10, None)
+        mock_rm.assert_called_once_with(["foo", "bar"], mock_serial_instance)
 
 
 def test_main_cp() -> None:
@@ -87,9 +111,17 @@ def test_main_cp() -> None:
     with (
         mock.patch("sys.argv", ["ufs", "cp", "foo.txt", "bar.txt"]),
         mock.patch("microfs.main.cp", return_value=True) as mock_cp,
+        mock.patch("microfs.main.MicroBitSerial") as mock_serial_class,
+        mock.patch(
+            "microfs.main.MicroBitSerial.get_serial",
+            return_value=mock_serial_class.return_value,
+        ),
     ):
+        mock_serial_instance = mock_serial_class.return_value
         main()
-        mock_cp.assert_called_once_with("foo.txt", "bar.txt", 10, None)
+        mock_cp.assert_called_once_with(
+            "foo.txt", "bar.txt", mock_serial_instance
+        )
 
 
 def test_main_mv() -> None:
@@ -97,9 +129,17 @@ def test_main_mv() -> None:
     with (
         mock.patch("sys.argv", ["ufs", "mv", "foo.txt", "bar.txt"]),
         mock.patch("microfs.main.mv", return_value=True) as mock_mv,
+        mock.patch("microfs.main.MicroBitSerial") as mock_serial_class,
+        mock.patch(
+            "microfs.main.MicroBitSerial.get_serial",
+            return_value=mock_serial_class.return_value,
+        ),
     ):
+        mock_serial_instance = mock_serial_class.return_value
         main()
-        mock_mv.assert_called_once_with("foo.txt", "bar.txt", 10, None)
+        mock_mv.assert_called_once_with(
+            "foo.txt", "bar.txt", mock_serial_instance
+        )
 
 
 def test_main_cat() -> None:
@@ -108,9 +148,15 @@ def test_main_cat() -> None:
         mock.patch("sys.argv", ["ufs", "cat", "foo.txt"]),
         mock.patch("microfs.main.cat", return_value="filecontent") as mock_cat,
         mock.patch.object(builtins, "print") as mock_print,
+        mock.patch("microfs.main.MicroBitSerial") as mock_serial_class,
+        mock.patch(
+            "microfs.main.MicroBitSerial.get_serial",
+            return_value=mock_serial_class.return_value,
+        ),
     ):
+        mock_serial_instance = mock_serial_class.return_value
         main()
-        mock_cat.assert_called_once_with("foo.txt", 10, None)
+        mock_cat.assert_called_once_with("foo.txt", mock_serial_instance)
         mock_print.assert_called_once_with("filecontent")
 
 
@@ -120,9 +166,15 @@ def test_main_du() -> None:
         mock.patch("sys.argv", ["ufs", "du", "foo.txt"]),
         mock.patch("microfs.main.du", return_value=1024) as mock_du,
         mock.patch.object(builtins, "print") as mock_print,
+        mock.patch("microfs.main.MicroBitSerial") as mock_serial_class,
+        mock.patch(
+            "microfs.main.MicroBitSerial.get_serial",
+            return_value=mock_serial_class.return_value,
+        ),
     ):
+        mock_serial_instance = mock_serial_class.return_value
         main()
-        mock_du.assert_called_once_with("foo.txt", 10, None)
+        mock_du.assert_called_once_with("foo.txt", mock_serial_instance)
         mock_print.assert_called_once_with(1024)
 
 
@@ -135,9 +187,17 @@ def test_main_put() -> None:
     with (
         mock.patch("sys.argv", ["ufs", "put", "foo"]),
         mock.patch("microfs.main.put", return_value=True) as mock_put,
+        mock.patch("microfs.main.MicroBitSerial") as mock_serial_class,
+        mock.patch(
+            "microfs.main.MicroBitSerial.get_serial",
+            return_value=mock_serial_class.return_value,
+        ),
     ):
+        mock_serial_instance = mock_serial_class.return_value
         main()
-        mock_put.assert_called_once_with(pathlib.Path("foo"), None, 10, None)
+        mock_put.assert_called_once_with(
+            pathlib.Path("foo"), mock_serial_instance, None
+        )
 
 
 def test_main_get() -> None:
@@ -149,9 +209,15 @@ def test_main_get() -> None:
     with (
         mock.patch("sys.argv", ["ufs", "get", "foo"]),
         mock.patch("microfs.main.get", return_value=True) as mock_get,
+        mock.patch("microfs.main.MicroBitSerial") as mock_serial_class,
+        mock.patch(
+            "microfs.main.MicroBitSerial.get_serial",
+            return_value=mock_serial_class.return_value,
+        ),
     ):
+        mock_serial_instance = mock_serial_class.return_value
         main()
-        mock_get.assert_called_once_with("foo", None, 10, None)
+        mock_get.assert_called_once_with("foo", mock_serial_instance, None)
 
 
 def test_main_version() -> None:
@@ -163,9 +229,15 @@ def test_main_version() -> None:
             "microfs.main.version", return_value=version_info
         ) as mock_version,
         mock.patch.object(builtins, "print") as mock_print,
+        mock.patch("microfs.main.MicroBitSerial") as mock_serial_class,
+        mock.patch(
+            "microfs.main.MicroBitSerial.get_serial",
+            return_value=mock_serial_class.return_value,
+        ),
     ):
+        mock_serial_instance = mock_serial_class.return_value
         main()
-        mock_version.assert_called_once_with(10, None)
+        mock_version.assert_called_once_with(mock_serial_instance)
         mock_print.assert_any_call(f"sysname: {version_info['sysname']}")
         mock_print.assert_any_call(f"release: {version_info['release']}")
 

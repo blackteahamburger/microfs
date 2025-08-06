@@ -284,60 +284,28 @@ class MicroBitSerial(Serial):
         return result
 
 
-def execute(
-    commands: Iterable[str],
-    timeout: int = 10,
-    serial: MicroBitSerial | None = None,
-) -> bytes:
-    """
-    Wrap the write_commands method of MicroBitSerial.
-
-    If no serial connection is provided, one will be created and closed.
-
-    Args:
-        commands: A list of commands to send to the micro:bit.
-        timeout: Device response timeout, only used if serial is None.
-        serial: An optional Serial object to use for communication.
-
-    Returns:
-        The stdout output from the micro:bit.
-
-    """
-    if serial is not None:
-        return serial.write_commands(commands)
-    with MicroBitSerial.get_serial(timeout) as s:
-        return s.write_commands(commands)
-
-
-def ls(timeout: int = 10, serial: MicroBitSerial | None = None) -> list[str]:
+def ls(serial: MicroBitSerial) -> list[str]:
     """
     List the files on the micro:bit.
 
-    If no serial object is supplied, microfs will attempt to detect the
-    connection itself.
-
     Args:
-        timeout: Device response timeout, only used if serial is None.
         serial: The serial connection to the device.
 
     Returns:
         A list of the files on the connected device.
 
     """
-    out = execute(["import os", "print(os.listdir())"], timeout, serial)
+    out = serial.write_commands(["import os", "print(os.listdir())"])
     return ast.literal_eval(out.decode())
 
 
-def cp(
-    src: str, dst: str, timeout: int = 10, serial: MicroBitSerial | None = None
-) -> None:
+def cp(src: str, dst: str, serial: MicroBitSerial) -> None:
     """
     Copy a file on the micro:bit filesystem.
 
     Args:
         src: Source filename on micro:bit.
         dst: Destination filename on micro:bit.
-        timeout: Device response timeout, only used if serial is None.
         serial: Serial connection.
 
     """
@@ -345,54 +313,43 @@ def cp(
         f"with open('{src}', 'rb') as fsrc, open('{dst}', 'wb') as fdst: "
         "fdst.write(fsrc.read())"
     ]
-    execute(commands, timeout, serial)
+    serial.write_commands(commands)
 
 
-def mv(
-    src: str, dst: str, timeout: int = 10, serial: MicroBitSerial | None = None
-) -> None:
+def mv(src: str, dst: str, serial: MicroBitSerial) -> None:
     """
     Move a file on the micro:bit filesystem.
 
     Args:
         src: Source filename on micro:bit.
         dst: Destination filename on micro:bit.
-        timeout: Device response timeout, only used if serial is None.
         serial: Serial connection.
 
     """
-    cp(src, dst, timeout, serial)
-    rm([src], timeout, serial)
+    cp(src, dst, serial)
+    rm([src], serial)
 
 
-def rm(
-    filenames: Iterable[str],
-    timeout: int = 10,
-    serial: MicroBitSerial | None = None,
-) -> None:
+def rm(filenames: Iterable[str], serial: MicroBitSerial) -> None:
     """
     Remove referenced files on the micro:bit.
 
     Args:
         filenames: A list of file names to remove.
-        timeout: Device response timeout, only used if serial is None.
         serial: The serial connection to the device.
 
     """
     commands = ["import os"]
     commands.extend(f"os.remove('{filename}')" for filename in filenames)
-    execute(commands, timeout, serial)
+    serial.write_commands(commands)
 
 
-def cat(
-    filename: str, timeout: int = 10, serial: MicroBitSerial | None = None
-) -> str:
+def cat(filename: str, serial: MicroBitSerial) -> str:
     """
     Print the contents of a file on the micro:bit.
 
     Args:
         filename: The file to display.
-        timeout: Device response timeout, only used if serial is None.
         serial: Serial connection.
 
     Returns:
@@ -400,19 +357,16 @@ def cat(
 
     """
     commands = [f"with open('{filename}', 'r') as f: print(f.read())"]
-    out = execute(commands, timeout, serial)
+    out = serial.write_commands(commands)
     return out.decode()
 
 
-def du(
-    filename: str, timeout: int = 10, serial: MicroBitSerial | None = None
-) -> int:
+def du(filename: str, serial: MicroBitSerial) -> int:
     """
     Get the size of a file on the micro:bit in bytes.
 
     Args:
         filename: The file to check.
-        timeout: Device response timeout, only used if serial is None.
         serial: Serial connection.
 
     Returns:
@@ -420,27 +374,20 @@ def du(
 
     """
     commands = ["import os", f"print(os.size('{filename}'))"]
-    out = execute(commands, timeout, serial)
+    out = serial.write_commands(commands)
     return int(out.decode().strip())
 
 
 def put(
-    filename: pathlib.Path,
-    target: str | None = None,
-    timeout: int = 10,
-    serial: MicroBitSerial | None = None,
+    filename: pathlib.Path, serial: MicroBitSerial, target: str | None = None
 ) -> None:
     """
     Copy a local file onto the BBC micro:bit file system.
-
-    If no serial object is supplied, microfs will attempt to detect the
-    connection itself.
 
     Args:
         filename: The local file to copy onto the micro:bit.
         target: The name of the file on the micro:bit (defaults to the name of
         the local file).
-        timeout: Device response timeout, only used if serial is None.
         serial: The serial connection to the device.
 
     """
@@ -454,29 +401,21 @@ def put(
         commands.append("f(" + repr(line) + ")")
         content = content[64:]
     commands.append("fd.close()")
-    execute(commands, timeout, serial)
+    serial.write_commands(commands)
 
 
 def get(
-    filename: str,
-    target: pathlib.Path | None = None,
-    timeout: int = 10,
-    serial: MicroBitSerial | None = None,
+    filename: str, serial: MicroBitSerial, target: pathlib.Path | None = None
 ) -> None:
     """
     Get a referenced file on the BBC micro:bit file system.
 
     Copies the file to the target or current working directory if unspecified.
 
-    If no serial object is supplied, microfs will attempt to detect the
-    connection itself.
-
     Args:
         filename: The name of the file to copy from the micro:bit.
         target: The local file to copy the micro:bit file to (defaults to the
         name of the file on the micro:bit).
-        force: Whether to overwrite the target file if it already exists.
-        timeout: Device response timeout, only used if serial is None.
         serial: The serial connection to the device.
 
     Raises:
@@ -505,7 +444,7 @@ def get(
         "while result:\n result = r(32)\n if result:\n  u.write(repr(result))",
         "f.close()",
     ]
-    out = execute(commands, timeout, serial)
+    out = serial.write_commands(commands)
     # Recombine the bytes while removing "b'" from start and "'" from end.
     if not out.startswith((b"b'", b'b"')) or not out.endswith((b"'", b'"')):
         msg = "Unexpected file data format received from device."
@@ -515,21 +454,18 @@ def get(
         f.write(out)
 
 
-def version(
-    timeout: int = 10, serial: MicroBitSerial | None = None
-) -> dict[str, str]:
+def version(serial: MicroBitSerial) -> dict[str, str]:
     """
     Return version information for MicroPython running on the connected device.
 
     Args:
-        timeout: Device response timeout, only used if serial is None.
         serial: The serial connection to the device.
 
     Returns:
         A dictionary containing version information.
 
     """
-    out = execute(["import os", "print(os.uname())"], timeout, serial)
+    out = serial.write_commands(["import os", "print(os.uname())"])
     raw = out.decode().strip()
     raw = raw[1:-1]
     items = raw.split(", ")
