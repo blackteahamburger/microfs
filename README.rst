@@ -1,7 +1,7 @@
 MicroFS
 =======
 
-A community fork of MicroFS. PR welcome!
+A community fork of `MicroFS <https://github.com/ntoll/microfs>`_.
 
 A simple command line tool and module for interacting with the limited
 file system provided by MicroPython on the BBC micro:bit.
@@ -9,9 +9,9 @@ file system provided by MicroPython on the BBC micro:bit.
 Installation
 ------------
 
-Download the source code and install the package using the following command::
+To install simply type::
 
-    $ pip install .
+    $ pip install microfs2
 
 Usage
 -----
@@ -24,7 +24,7 @@ In Code
 
 In your Python script import the required functions like this::
 
-    from microfs.lib import ls, rm, cp, mv, cat, du, put, get, version, get_serial
+    from microfs.lib import MicroBitSerial, ls, rm, cp, mv, cat, du, put, get, version
 
 Read the API documentation below to learn how each of the functions works.
 
