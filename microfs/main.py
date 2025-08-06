@@ -39,31 +39,31 @@ def _handle_ls(args: argparse.Namespace) -> None:
 
 
 def _handle_cp(args: argparse.Namespace) -> None:
-    cp(args.src, args.dst, args.serial)
+    cp(args.serial, args.src, args.dst)
 
 
 def _handle_mv(args: argparse.Namespace) -> None:
-    mv(args.src, args.dst, args.serial)
+    mv(args.serial, args.src, args.dst)
 
 
 def _handle_rm(args: argparse.Namespace) -> None:
-    rm(args.paths, args.serial)
+    rm(args.serial, args.paths)
 
 
 def _handle_cat(args: argparse.Namespace) -> None:
-    print(cat(args.path, args.serial))  # noqa: T201
+    print(cat(args.serial, args.path))  # noqa: T201
 
 
 def _handle_du(args: argparse.Namespace) -> None:
-    print(du(args.path, args.serial))  # noqa: T201
+    print(du(args.serial, args.path))  # noqa: T201
 
 
 def _handle_put(args: argparse.Namespace) -> None:
-    put(args.path, args.serial, args.target)
+    put(args.serial, args.path, args.target)
 
 
 def _handle_get(args: argparse.Namespace) -> None:
-    get(args.path, args.serial, args.target)
+    get(args.serial, args.path, args.target)
 
 
 def _handle_version(args: argparse.Namespace) -> None:

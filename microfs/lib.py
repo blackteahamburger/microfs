@@ -299,14 +299,14 @@ def ls(serial: MicroBitSerial) -> list[str]:
     return ast.literal_eval(out.decode())
 
 
-def cp(src: str, dst: str, serial: MicroBitSerial) -> None:
+def cp(serial: MicroBitSerial, src: str, dst: str) -> None:
     """
     Copy a file on the micro:bit filesystem.
 
     Args:
+        serial: Serial connection.
         src: Source filename on micro:bit.
         dst: Destination filename on micro:bit.
-        serial: Serial connection.
 
     """
     commands = [
@@ -316,27 +316,27 @@ def cp(src: str, dst: str, serial: MicroBitSerial) -> None:
     serial.write_commands(commands)
 
 
-def mv(src: str, dst: str, serial: MicroBitSerial) -> None:
+def mv(serial: MicroBitSerial, src: str, dst: str) -> None:
     """
     Move a file on the micro:bit filesystem.
 
     Args:
+        serial: Serial connection.
         src: Source filename on micro:bit.
         dst: Destination filename on micro:bit.
-        serial: Serial connection.
 
     """
-    cp(src, dst, serial)
-    rm([src], serial)
+    cp(serial, src, dst)
+    rm(serial, [src])
 
 
-def rm(filenames: Iterable[str], serial: MicroBitSerial) -> None:
+def rm(serial: MicroBitSerial, filenames: Iterable[str]) -> None:
     """
     Remove referenced files on the micro:bit.
 
     Args:
+        serial: Serial connection.
         filenames: A list of file names to remove.
-        serial: The serial connection to the device.
 
     """
     commands = ["import os"]
@@ -344,13 +344,13 @@ def rm(filenames: Iterable[str], serial: MicroBitSerial) -> None:
     serial.write_commands(commands)
 
 
-def cat(filename: str, serial: MicroBitSerial) -> str:
+def cat(serial: MicroBitSerial, filename: str) -> str:
     """
     Print the contents of a file on the micro:bit.
 
     Args:
-        filename: The file to display.
         serial: Serial connection.
+        filename: The file to display.
 
     Returns:
         The file content as string.
@@ -361,13 +361,13 @@ def cat(filename: str, serial: MicroBitSerial) -> str:
     return out.decode()
 
 
-def du(filename: str, serial: MicroBitSerial) -> int:
+def du(serial: MicroBitSerial, filename: str) -> int:
     """
     Get the size of a file on the micro:bit in bytes.
 
     Args:
-        filename: The file to check.
         serial: Serial connection.
+        filename: The file to check.
 
     Returns:
         Size in bytes.
@@ -379,16 +379,16 @@ def du(filename: str, serial: MicroBitSerial) -> int:
 
 
 def put(
-    filename: pathlib.Path, serial: MicroBitSerial, target: str | None = None
+    serial: MicroBitSerial, filename: pathlib.Path, target: str | None = None
 ) -> None:
     """
     Copy a local file onto the BBC micro:bit file system.
 
     Args:
+        serial: The serial connection to the device.
         filename: The local file to copy onto the micro:bit.
         target: The name of the file on the micro:bit (defaults to the name of
         the local file).
-        serial: The serial connection to the device.
 
     """
     with filename.open("rb") as local:
@@ -405,7 +405,7 @@ def put(
 
 
 def get(
-    filename: str, serial: MicroBitSerial, target: pathlib.Path | None = None
+    serial: MicroBitSerial, filename: str, target: pathlib.Path | None = None
 ) -> None:
     """
     Get a referenced file on the BBC micro:bit file system.
@@ -413,10 +413,10 @@ def get(
     Copies the file to the target or current working directory if unspecified.
 
     Args:
+        serial: The serial connection to the device.
         filename: The name of the file to copy from the micro:bit.
         target: The local file to copy the micro:bit file to (defaults to the
         name of the file on the micro:bit).
-        serial: The serial connection to the device.
 
     Raises:
         MicroBitIOError: If file data format received from device is invalid.

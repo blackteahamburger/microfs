@@ -103,7 +103,7 @@ def test_main_rm() -> None:
     ):
         mock_serial_instance = mock_serial_class.return_value
         main()
-        mock_rm.assert_called_once_with(["foo", "bar"], mock_serial_instance)
+        mock_rm.assert_called_once_with(mock_serial_instance, ["foo", "bar"])
 
 
 def test_main_cp() -> None:
@@ -120,7 +120,7 @@ def test_main_cp() -> None:
         mock_serial_instance = mock_serial_class.return_value
         main()
         mock_cp.assert_called_once_with(
-            "foo.txt", "bar.txt", mock_serial_instance
+            mock_serial_instance, "foo.txt", "bar.txt"
         )
 
 
@@ -138,7 +138,7 @@ def test_main_mv() -> None:
         mock_serial_instance = mock_serial_class.return_value
         main()
         mock_mv.assert_called_once_with(
-            "foo.txt", "bar.txt", mock_serial_instance
+            mock_serial_instance, "foo.txt", "bar.txt"
         )
 
 
@@ -156,7 +156,7 @@ def test_main_cat() -> None:
     ):
         mock_serial_instance = mock_serial_class.return_value
         main()
-        mock_cat.assert_called_once_with("foo.txt", mock_serial_instance)
+        mock_cat.assert_called_once_with(mock_serial_instance, "foo.txt")
         mock_print.assert_called_once_with("filecontent")
 
 
@@ -174,7 +174,7 @@ def test_main_du() -> None:
     ):
         mock_serial_instance = mock_serial_class.return_value
         main()
-        mock_du.assert_called_once_with("foo.txt", mock_serial_instance)
+        mock_du.assert_called_once_with(mock_serial_instance, "foo.txt")
         mock_print.assert_called_once_with(1024)
 
 
@@ -196,7 +196,7 @@ def test_main_put() -> None:
         mock_serial_instance = mock_serial_class.return_value
         main()
         mock_put.assert_called_once_with(
-            pathlib.Path("foo"), mock_serial_instance, None
+            mock_serial_instance, pathlib.Path("foo"), None
         )
 
 
@@ -217,7 +217,7 @@ def test_main_get() -> None:
     ):
         mock_serial_instance = mock_serial_class.return_value
         main()
-        mock_get.assert_called_once_with("foo", mock_serial_instance, None)
+        mock_get.assert_called_once_with(mock_serial_instance, "foo", None)
 
 
 def test_main_version() -> None:

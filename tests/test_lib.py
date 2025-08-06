@@ -254,7 +254,7 @@ def test_rm() -> None:
     with mock.patch.object(
         mock_serial, "write_commands", return_value=b""
     ) as write_commands:
-        microfs.lib.rm(["foo.txt"], mock_serial)
+        microfs.lib.rm(mock_serial, ["foo.txt"])
         write_commands.assert_called_once_with([
             "import os",
             "os.remove('foo.txt')",
@@ -267,7 +267,7 @@ def test_cp() -> None:
     with mock.patch.object(
         mock_serial, "write_commands", return_value=b""
     ) as write_commands:
-        microfs.lib.cp("foo.txt", "bar.txt", mock_serial)
+        microfs.lib.cp(mock_serial, "foo.txt", "bar.txt")
         write_commands.assert_called_once_with([
             "with open('foo.txt', 'rb') as fsrc, "
             "open('bar.txt', 'wb') as fdst: fdst.write(fsrc.read())"
@@ -281,9 +281,9 @@ def test_mv() -> None:
         mock.patch("microfs.lib.cp", return_value=True) as mock_cp,
         mock.patch("microfs.lib.rm", return_value=True) as mock_rm,
     ):
-        microfs.lib.mv("foo.txt", "bar.txt", mock_serial)
-        mock_cp.assert_called_once_with("foo.txt", "bar.txt", mock_serial)
-        mock_rm.assert_called_once_with(["foo.txt"], mock_serial)
+        microfs.lib.mv(mock_serial, "foo.txt", "bar.txt")
+        mock_cp.assert_called_once_with(mock_serial, "foo.txt", "bar.txt")
+        mock_rm.assert_called_once_with(mock_serial, ["foo.txt"])
 
 
 def test_cat() -> None:
@@ -292,7 +292,7 @@ def test_cat() -> None:
     with mock.patch.object(
         mock_serial, "write_commands", return_value=b"hello world"
     ) as write_commands:
-        result = microfs.lib.cat("foo.txt", mock_serial)
+        result = microfs.lib.cat(mock_serial, "foo.txt")
         assert result == "hello world"
         write_commands.assert_called_once_with([
             "with open('foo.txt', 'r') as f: print(f.read())"
@@ -305,7 +305,7 @@ def test_du() -> None:
     with mock.patch.object(
         mock_serial, "write_commands", return_value=b"1024"
     ) as write_commands:
-        result = microfs.lib.du("foo.txt", mock_serial)
+        result = microfs.lib.du(mock_serial, "foo.txt")
         assert result == 1024
         write_commands.assert_called_once_with([
             "import os",
@@ -322,7 +322,7 @@ def test_put() -> None:
         with mock.patch.object(
             mock_serial, "write_commands", return_value=b""
         ) as write_commands:
-            microfs.lib.put(file_path, mock_serial, "remote.txt")
+            microfs.lib.put(mock_serial, file_path, "remote.txt")
             commands = [
                 "fd = open('remote.txt', 'wb')",
                 "f = fd.write",
@@ -341,7 +341,7 @@ def test_put_no_target() -> None:
         with mock.patch.object(
             mock_serial, "write_commands", return_value=b""
         ) as write_commands:
-            microfs.lib.put(file_path, mock_serial, None)
+            microfs.lib.put(mock_serial, file_path, None)
             commands = [
                 f"fd = open('{file_path.name}', 'wb')",
                 "f = fd.write",
@@ -384,7 +384,7 @@ def test_get() -> None:
             ) as write_commands,
             mock.patch.object(pathlib.Path, "open", mock.mock_open()) as mo,
         ):
-            microfs.lib.get("hello.txt", mock_serial, file_path)
+            microfs.lib.get(mock_serial, "hello.txt", file_path)
             write_commands.assert_called_once_with(commands)
             mo.assert_called_once_with("wb")
             handle = mo()
@@ -424,7 +424,7 @@ def test_get_no_target() -> None:
         ) as write_commands,
         mock.patch.object(pathlib.Path, "open", mock.mock_open()) as mo,
     ):
-        microfs.lib.get("hello.txt", mock_serial)
+        microfs.lib.get(mock_serial, "hello.txt")
         write_commands.assert_called_once_with(commands)
         mo.assert_called_once_with("wb")
         handle = mo()
@@ -440,7 +440,7 @@ def test_get_invalid_data() -> None:
         ),
         pytest.raises(microfs.lib.MicroBitIOError),
     ):
-        microfs.lib.get("foo.txt", mock_serial, pathlib.Path("bar.txt"))
+        microfs.lib.get(mock_serial, "foo.txt", pathlib.Path("bar.txt"))
 
 
 def test_version() -> None:

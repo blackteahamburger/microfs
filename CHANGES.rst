@@ -18,9 +18,7 @@ Release History
   A `MicroBitSerial` instance must be provided.
   Use `MicroBitSerial.get_serial()` to get a serial connection
   of the detected micro:bit.
-* **API CHANGE**: The order of arguments for `put` and `get` functions
-  has changed. The local file argument comes first, followed by the
-  `MicroBitSerial` instance, and then the optional target filename.
+* **API CHANGE**: The order of function arguments has changed.
 * **API CHANGE**: The `find_microbit` function now returns the port
   (previously returned a tuple of (port string, serial number)).
 * **API CHANGE**: Exception handling is now more granular. Introduced
