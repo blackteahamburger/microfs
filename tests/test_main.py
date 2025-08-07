@@ -20,7 +20,7 @@ from microfs.main import main
 if TYPE_CHECKING:
     from collections.abc import Generator
 
-MICROFS_VERSION = "2.0.0"
+MICROFS_VERSION = "2.0.1"
 
 
 @pytest.fixture(autouse=True)
@@ -251,7 +251,7 @@ def test_main_version_flag() -> None:
     ):
         main()
     output = "".join(call.args[0] for call in mock_stdout.write.call_args_list)
-    assert f"microfs version: {MICROFS_VERSION}" in output
+    assert f"MicroFS version: {MICROFS_VERSION}" in output
     assert pytest_exc.type is SystemExit
 
 
@@ -265,11 +265,13 @@ def test_main_handles_microbit_io_error() -> None:
         mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
     ):
         mock_logger = mock_get_logger.return_value
-        main()
+        with pytest.raises(SystemExit) as pytest_exc:
+            main()
         mock_logger.error.assert_called_with(
             "An I/O error occurred with the BBC micro:bit device: %s", mock.ANY
         )
         assert "io fail" in str(mock_logger.error.call_args[0][1])
+        assert pytest_exc.type is SystemExit
 
 
 def test_main_handles_microbit_not_found_error() -> None:
@@ -283,11 +285,13 @@ def test_main_handles_microbit_not_found_error() -> None:
         mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
     ):
         mock_logger = mock_get_logger.return_value
-        main()
+        with pytest.raises(SystemExit) as pytest_exc:
+            main()
         mock_logger.error.assert_called_with(
             "The BBC micro:bit device is not connected: %s", mock.ANY
         )
         assert "not found" in str(mock_logger.error.call_args[0][1])
+        assert pytest_exc.type is SystemExit
 
 
 def test_main_handles_file_not_found_error() -> None:
@@ -301,9 +305,11 @@ def test_main_handles_file_not_found_error() -> None:
         mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
     ):
         mock_logger = mock_get_logger.return_value
-        main()
+        with pytest.raises(SystemExit) as pytest_exc:
+            main()
         mock_logger.error.assert_called_with("File not found: %s", mock.ANY)
         assert "missing.txt" in str(mock_logger.error.call_args[0][1])
+        assert pytest_exc.type is SystemExit
 
 
 def test_main_handles_is_a_directory_error() -> None:
@@ -316,11 +322,13 @@ def test_main_handles_is_a_directory_error() -> None:
         mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
     ):
         mock_logger = mock_get_logger.return_value
-        main()
+        with pytest.raises(SystemExit) as pytest_exc:
+            main()
         mock_logger.error.assert_called_with(
             "Expected a file but found a directory: %s", mock.ANY
         )
         assert "dir" in str(mock_logger.error.call_args[0][1])
+        assert pytest_exc.type is SystemExit
 
 
 def test_main_handles_generic_exception() -> None:
@@ -333,10 +341,12 @@ def test_main_handles_generic_exception() -> None:
         mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
     ):
         mock_logger = mock_get_logger.return_value
-        main()
+        with pytest.raises(SystemExit) as pytest_exc:
+            main()
         mock_logger.exception.assert_called_with(
             "An unknown error occurred during execution."
         )
+        assert pytest_exc.type is SystemExit
 
 
 def test_main_handles_serial_exception() -> None:
@@ -350,11 +360,13 @@ def test_main_handles_serial_exception() -> None:
         mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
     ):
         mock_logger = mock_get_logger.return_value
-        main()
+        with pytest.raises(SystemExit) as pytest_exc:
+            main()
         mock_logger.error.assert_called_with(
             "Serial communication error: %s", mock.ANY
         )
         assert "fail" in str(mock_logger.error.call_args[0][1])
+        assert pytest_exc.type is SystemExit
 
 
 def test_main_handles_serial_timeout_exception() -> None:
@@ -368,8 +380,10 @@ def test_main_handles_serial_timeout_exception() -> None:
         mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
     ):
         mock_logger = mock_get_logger.return_value
-        main()
+        with pytest.raises(SystemExit) as pytest_exc:
+            main()
         mock_logger.error.assert_called_with(
             "Serial communication timed out: %s", mock.ANY
         )
         assert "timeout" in str(mock_logger.error.call_args[0][1])
+        assert pytest_exc.type is SystemExit

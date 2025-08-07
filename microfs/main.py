@@ -100,7 +100,7 @@ The following commands are available:
     parser.add_argument(
         "--version",
         action="version",
-        version=f"microfs version: {importlib.metadata.version('microfs2')}",
+        version=f"MicroFS version: {importlib.metadata.version('microfs2')}",
         help="output version information of microfs and exit",
     )
     parser.add_argument(
@@ -234,18 +234,25 @@ def main() -> None:
         logger.error(  # noqa: TRY400
             "An I/O error occurred with the BBC micro:bit device: %s", e
         )
+        sys.exit(1)
     except MicroBitNotFoundError as e:
         logger.error("The BBC micro:bit device is not connected: %s", e)  # noqa: TRY400
+        sys.exit(1)
     except SerialTimeoutException as e:
         logger.error("Serial communication timed out: %s", e)  # noqa: TRY400
+        sys.exit(1)
     except SerialException as e:
         logger.error("Serial communication error: %s", e)  # noqa: TRY400
+        sys.exit(1)
     except FileNotFoundError as e:
         logger.error("File not found: %s", e)  # noqa: TRY400
+        sys.exit(1)
     except IsADirectoryError as e:
         logger.error("Expected a file but found a directory: %s", e)  # noqa: TRY400
+        sys.exit(1)
     except Exception:
         logger.exception("An unknown error occurred during execution.")
+        sys.exit(1)
 
 
 if __name__ == "__main__":  # pragma: no cover
