@@ -1,6 +1,12 @@
 Release History
 ===============
 
+2.0.5
+-----
+* **API CHANGE**: `MicroBitSerial.flush` override method is removed
+* `MicroBitSerial.open` and `MicroBitSerial.close`
+  now call `raw_on` and `raw_off` respectively.
+
 2.0.4
 -----
 * Add `micropython_version` function to get the version of MicroPython.

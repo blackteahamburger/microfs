@@ -17,7 +17,6 @@ from serial.tools.list_ports import comports as list_serial_ports
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-    from types import TracebackType
 
     from _typeshed import ReadableBuffer
     from serial.tools.list_ports_linux import SysFS
@@ -129,39 +128,16 @@ class MicroBitSerial(Serial):
             raise MicroBitNotFoundError(msg)
         return cls(port[0], timeout=timeout)
 
-    def __enter__(self) -> Self:
-        """
-        Enter context: open port if needed and enter raw mode.
-
-        Returns:
-            The MicroBitSerial object.
-
-        """
-        super().__enter__()
+    def open(self) -> None:
+        """Open the serial port and enter raw mode."""
+        super().open()
+        time.sleep(0.1)
         self.raw_on()
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        """
-        Exit context: leave raw mode and close port.
-
-        Args:
-            exc_type: The type of the exception raised, if any.
-            exc_val: The value of the exception raised, if any.
-            exc_tb: The traceback of the exception raised, if any.
-
-        """
-        with contextlib.suppress(Exception):
-            self.raw_off()
-        super().__exit__(exc_type, exc_val, exc_tb)
 
     def close(self) -> None:
-        """Close port and sleep to avoid data floods."""
+        """Exit raw mode and close the serial port."""
+        with contextlib.suppress(Exception):
+            self.raw_off()
         super().close()
         time.sleep(0.1)
 
@@ -197,13 +173,6 @@ class MicroBitSerial(Serial):
             f"expected: {msg}, got: {data}"
             raise MicroBitIOError(err)
 
-    def flush(self) -> None:
-        """Flush all rx input without relying on serial.flushInput()."""
-        n = self.in_waiting
-        while n > 0:
-            self.read(n)
-            n = self.in_waiting
-
     def raw_on(self) -> None:
         """Put the device into raw mode."""
         raw_repl_msg = b"raw REPL; CTRL-B to exit\r\n>"
@@ -212,7 +181,7 @@ class MicroBitSerial(Serial):
         # Send CTRL-C three times between pauses to break out of loop.
         for _ in range(3):
             self.write(b"\r\x03")
-        self.flush()
+        self.reset_input_buffer()
         # Go into raw mode with CTRL-A.
         self.write(b"\r\x01")
         self.flush_to_msg(raw_repl_msg)

@@ -82,6 +82,7 @@ def test_raw_on() -> None:
         serial_obj = microfs.lib.MicroBitSerial("/dev/ttyACM0")
         _init_serial_attrs(serial_obj, "/dev/ttyACM0")
         serial_obj.write = mock.MagicMock()
+        serial_obj.reset_input_buffer = mock.MagicMock()
         serial_obj.flush = mock.MagicMock()
         serial_obj.read_until = mock.MagicMock()
         serial_obj.read_until.side_effect = [
@@ -151,6 +152,7 @@ def test_raw_on_fail() -> None:
         serial_obj = microfs.lib.MicroBitSerial("/dev/ttyACM0")
         _init_serial_attrs(serial_obj, "/dev/ttyACM0")
         serial_obj.write = mock.MagicMock()
+        serial_obj.reset_input_buffer = mock.MagicMock()
         serial_obj.flush = mock.MagicMock()
         serial_obj.read_until = mock.MagicMock(return_value=b"not expected")
         serial_obj.flush_to_msg = mock.MagicMock(
@@ -188,35 +190,6 @@ def test_flush_to_msg_failure() -> None:
     mock_serial.read_until.return_value = b"something else"
     with pytest.raises(microfs.lib.MicroBitIOError):
         microfs.lib.MicroBitSerial.flush_to_msg(mock_serial, msg)
-
-
-def test_flush_reads_none() -> None:
-    """Test flush does nothing if in_waiting is 0."""
-    serial = mock.MagicMock()
-    serial.in_waiting = 0
-    microfs.lib.MicroBitSerial.flush(serial)
-    serial.read.assert_not_called()
-
-
-def test_flush_reads_all() -> None:
-    """Test that flush reads all bytes from the serial input buffer."""
-    mock_serial = mock.MagicMock()
-    mock_serial.in_waiting = 3
-
-    def fake_read(n: int) -> bytes:
-        return b"x" * n
-
-    mock_serial.read.side_effect = fake_read
-    vals = [3, 2, 1, 0]
-
-    def in_waiting_side() -> int:
-        return vals.pop(0)
-
-    type(mock_serial).in_waiting = mock.PropertyMock(
-        side_effect=in_waiting_side
-    )
-    microfs.lib.MicroBitSerial.flush(mock_serial)
-    assert mock_serial.read.call_count == 3
 
 
 def test_ls() -> None:
@@ -541,44 +514,6 @@ def test_micropython_version_old_style() -> None:
         assert result == "unknown"
 
 
-def test_microbitserial_context_manager() -> None:
-    """Test MicroBitSerial context manager calls raw_on and raw_off."""
-    with mock.patch.object(serial.Serial, "__init__", return_value=None):
-        serial_obj = microfs.lib.MicroBitSerial("/dev/ttyACM0")
-        _init_serial_attrs(serial_obj, "/dev/ttyACM0")
-        serial_obj.raw_on = mock.MagicMock()
-        serial_obj.raw_off = mock.MagicMock()
-        serial_obj.close = mock.MagicMock()
-        with (
-            mock.patch(
-                "microfs.lib.Serial.__enter__", return_value=serial_obj
-            ),
-            mock.patch("microfs.lib.Serial.__exit__", return_value=None),
-        ):
-            with serial_obj as s:
-                assert s is serial_obj
-                serial_obj.raw_on.assert_called_once()
-            serial_obj.raw_off.assert_called_once()
-            serial_obj.close.assert_not_called()
-
-
-def test_microbitserial_write_and_close() -> None:
-    """Test MicroBitSerial.write and close add sleep and call super."""
-    with mock.patch.object(serial.Serial, "__init__", return_value=None):
-        serial_obj = microfs.lib.MicroBitSerial("/dev/ttyACM0")
-        _init_serial_attrs(serial_obj, "/dev/ttyACM0")
-        with (
-            mock.patch("microfs.lib.Serial.write", return_value=1),
-            mock.patch("microfs.lib.Serial.close") as super_close,
-            mock.patch("time.sleep") as sleep,
-        ):
-            assert serial_obj.write(b"abc") == 1
-            sleep.assert_any_call(0.01)
-            serial_obj.close()
-            sleep.assert_any_call(0.1)
-            super_close.assert_called()
-
-
 def test_write_command_error() -> None:
     """Test write_command raises MicroBitIOError if error in response."""
     with mock.patch.object(serial.Serial, "__init__", return_value=None):
@@ -634,3 +569,69 @@ def test_get_serial_not_found() -> None:
         with pytest.raises(microfs.lib.MicroBitNotFoundError) as exc:
             microfs.lib.MicroBitSerial.get_serial()
         assert "Could not find micro:bit" in str(exc.value)
+
+
+def test_write() -> None:
+    """Test that write calls super().write and sleeps briefly."""
+    with mock.patch.object(serial.Serial, "__init__", return_value=None):
+        serial_obj = microfs.lib.MicroBitSerial("/dev/ttyACM0")
+        _init_serial_attrs(serial_obj, "/dev/ttyACM0")
+        with (
+            mock.patch.object(
+                serial.Serial, "write", return_value=5
+            ) as super_write,
+            mock.patch("time.sleep") as sleep,
+        ):
+            result = serial_obj.write(b"abc")
+            super_write.assert_called_once_with(b"abc")
+            sleep.assert_called_once_with(0.01)
+            assert result == 5
+
+
+def test_open() -> None:
+    """Test that open calls super().open, sleeps, and raw_on."""
+    with mock.patch.object(serial.Serial, "__init__", return_value=None):
+        serial_obj = microfs.lib.MicroBitSerial("/dev/ttyACM0")
+        _init_serial_attrs(serial_obj, "/dev/ttyACM0")
+        with (
+            mock.patch.object(serial.Serial, "open") as super_open,
+            mock.patch("time.sleep") as sleep,
+            mock.patch.object(serial_obj, "raw_on") as raw_on,
+        ):
+            serial_obj.open()
+            super_open.assert_called_once_with()
+            sleep.assert_any_call(0.1)
+            raw_on.assert_called_once_with()
+
+
+def test_close() -> None:
+    """Test that close calls raw_off, super().close, and sleeps."""
+    with mock.patch.object(serial.Serial, "__init__", return_value=None):
+        serial_obj = microfs.lib.MicroBitSerial("/dev/ttyACM0")
+        _init_serial_attrs(serial_obj, "/dev/ttyACM0")
+        with (
+            mock.patch.object(serial_obj, "raw_off") as raw_off,
+            mock.patch.object(serial.Serial, "close") as super_close,
+            mock.patch("time.sleep") as sleep,
+        ):
+            serial_obj.close()
+            raw_off.assert_called_once_with()
+            super_close.assert_called_once_with()
+            sleep.assert_any_call(0.1)
+
+
+def test_close_suppresses_raw_off_exception() -> None:
+    """Test that close suppresses exceptions from raw_off."""
+    with mock.patch.object(serial.Serial, "__init__", return_value=None):
+        serial_obj = microfs.lib.MicroBitSerial("/dev/ttyACM0")
+        _init_serial_attrs(serial_obj, "/dev/ttyACM0")
+        with (
+            mock.patch.object(
+                serial_obj, "raw_off", side_effect=Exception("fail")
+            ),
+            mock.patch.object(serial.Serial, "close") as super_close,
+            mock.patch("time.sleep") as sleep,
+        ):
+            serial_obj.close()
+            super_close.assert_called_once_with()
+            sleep.assert_any_call(0.1)
