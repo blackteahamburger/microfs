@@ -249,7 +249,7 @@ def test_ls_width_delimiter() -> None:
 
 
 def test_rm() -> None:
-    """Test that rm removes a file and returns True."""
+    """Test that rm removes a file."""
     mock_serial = mock.MagicMock()
     with mock.patch.object(
         mock_serial, "write_commands", return_value=b""
@@ -262,7 +262,7 @@ def test_rm() -> None:
 
 
 def test_cp() -> None:
-    """Test that cp calls execute with correct commands and returns True."""
+    """Test that cp calls execute with correct commands."""
     mock_serial = mock.MagicMock()
     with mock.patch.object(
         mock_serial, "write_commands", return_value=b""
@@ -275,11 +275,11 @@ def test_cp() -> None:
 
 
 def test_mv() -> None:
-    """Test that mv calls cp and rm and returns True."""
+    """Test that mv calls cp and rm."""
     mock_serial = mock.MagicMock()
     with (
-        mock.patch("microfs.lib.cp", return_value=True) as mock_cp,
-        mock.patch("microfs.lib.rm", return_value=True) as mock_rm,
+        mock.patch("microfs.lib.cp") as mock_cp,
+        mock.patch("microfs.lib.rm") as mock_rm,
     ):
         microfs.lib.mv(mock_serial, "foo.txt", "bar.txt")
         mock_cp.assert_called_once_with(mock_serial, "foo.txt", "bar.txt")
@@ -314,7 +314,7 @@ def test_du() -> None:
 
 
 def test_put() -> None:
-    """Check put calls and returns True for an existing file."""
+    """Check put calls for an existing file."""
     with tempfile.TemporaryDirectory() as tmpdir:
         file_path = pathlib.Path(tmpdir) / "fixture_file.txt"
         file_path.write_bytes(b"hello")
@@ -333,7 +333,7 @@ def test_put() -> None:
 
 
 def test_put_no_target() -> None:
-    """Check put calls and returns True for an existing file."""
+    """Check put calls for an existing file."""
     with tempfile.TemporaryDirectory() as tmpdir:
         file_path = pathlib.Path(tmpdir) / "fixture_file.txt"
         file_path.write_bytes(b"hello")
@@ -423,6 +423,47 @@ def test_get_no_target() -> None:
         mock.patch.object(pathlib.Path, "write_bytes") as write_bytes,
     ):
         microfs.lib.get(mock_serial, "hello.txt")
+        write_commands.assert_called_once_with(commands)
+        write_bytes.assert_called_once_with(b"hello")
+
+
+def test_get_target_is_dir() -> None:
+    """
+    Check get writes the expected file content when target is a directory.
+
+    Should save as target/filename.
+    """
+    mock_serial = mock.MagicMock()
+    commands = [
+        "\n".join([
+            "try:",
+            " from microbit import uart as u",
+            "except ImportError:",
+            " try:",
+            "  from machine import UART",
+            f"  u = UART(0, {microfs.lib.MicroBitSerial.SERIAL_BAUD_RATE})",
+            " except Exception:",
+            "  try:",
+            "   from sys import stdout as u",
+            "  except Exception:",
+            "   raise Exception('Could not find UART module in device.')",
+        ]),
+        "f = open('hello.txt', 'rb')",
+        "r = f.read",
+        "result = True",
+        "while result:\n result = r(32)\n if result:\n  u.write(repr(result))",
+        "f.close()",
+    ]
+    with (
+        tempfile.TemporaryDirectory() as tmpdir,
+        mock.patch.object(
+            mock_serial, "write_commands", return_value=b"b'hello'"
+        ) as write_commands,
+        mock.patch.object(pathlib.Path, "write_bytes") as write_bytes,
+        mock.patch.object(pathlib.Path, "is_dir", return_value=True),
+    ):
+        target_dir = pathlib.Path(tmpdir)
+        microfs.lib.get(mock_serial, "hello.txt", target_dir)
         write_commands.assert_called_once_with(commands)
         write_bytes.assert_called_once_with(b"hello")
 

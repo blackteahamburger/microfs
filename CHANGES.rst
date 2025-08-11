@@ -4,6 +4,7 @@ Release History
 2.0.2
 -----
 * Simplify file reading and writing operations.
+* Support for specifying a directory as the target in the `get` command.
 
 2.0.1
 -----

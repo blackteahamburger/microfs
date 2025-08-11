@@ -171,7 +171,7 @@ The following commands are available:
         "target",
         type=pathlib.Path,
         nargs="?",
-        help="The local file to copy the micro:bit file to.\n"
+        help="The local path to copy the micro:bit file to.\n"
         "Defaults to the name of the file on the micro:bit.",
     )
 

@@ -414,7 +414,7 @@ def get(
     Args:
         serial: The serial connection to the device.
         filename: The name of the file to copy from the micro:bit.
-        target: The local file to copy the micro:bit file to (defaults to the
+        target: The local path to copy the micro:bit file to (defaults to the
         name of the file on the micro:bit).
 
     Raises:
@@ -423,6 +423,8 @@ def get(
     """
     if target is None:
         target = pathlib.Path(filename)
+    elif target.is_dir():
+        target /= filename
     commands = [
         "\n".join([
             "try:",

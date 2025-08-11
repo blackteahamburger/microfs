@@ -5,8 +5,6 @@
 [project]
     authors = [
         { name = "Blackteahamburger", email = "blackteahamburger@outlook.com" },
-        { name = "Carlos Pereira Atencio" },
-        { name = "Nicholas H.Tollervey", email = "ntoll@ntoll.org" },
     ]
     classifiers = [
         "Development Status :: 5 - Production/Stable",
