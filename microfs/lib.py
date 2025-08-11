@@ -48,7 +48,7 @@ class MicroBitSerial(Serial):
         bytesize: int = EIGHTBITS,
         parity: str = PARITY_NONE,
         stopbits: int = STOPBITS_ONE,
-        timeout: int = DEFAULT_TIMEOUT,
+        timeout: float = DEFAULT_TIMEOUT,
         xonxoff: bool = False,
         rtscts: bool = False,
         write_timeout: float | None = None,
@@ -109,7 +109,7 @@ class MicroBitSerial(Serial):
         return None
 
     @classmethod
-    def get_serial(cls, timeout: int = 10) -> Self:
+    def get_serial(cls, timeout: float = 10) -> Self:
         """
         Return a MicroBitSerial object for a connected micro:bit.
 

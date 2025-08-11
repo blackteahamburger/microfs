@@ -1,6 +1,10 @@
 Release History
 ===============
 
+2.0.3
+-----
+* Fix type hint for timeout parameter in `MicroBitSerial.__init__` and `MicroBitSerial.get_serial`.
+
 2.0.2
 -----
 * Simplify file reading and writing operations.

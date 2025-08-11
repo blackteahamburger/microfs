@@ -20,7 +20,7 @@ from microfs.main import main
 if TYPE_CHECKING:
     from collections.abc import Generator
 
-MICROFS_VERSION = "2.0.2"
+MICROFS_VERSION = "2.0.3"
 
 
 @pytest.fixture(autouse=True)  # pyright: ignore[reportUnknownMemberType]
