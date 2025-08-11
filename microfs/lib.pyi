@@ -22,7 +22,7 @@ class MicroBitSerial(Serial):
         bytesize: int = ...,
         parity: str = ...,
         stopbits: int = ...,
-        timeout: int = ...,
+        timeout: float = ...,
         xonxoff: bool = False,
         rtscts: bool = False,
         write_timeout: float | None = None,
@@ -34,7 +34,7 @@ class MicroBitSerial(Serial):
     @staticmethod
     def find_microbit() -> SysFS | None: ...
     @classmethod
-    def get_serial(cls, timeout: int = 10) -> Self: ...
+    def get_serial(cls, timeout: float = 10) -> Self: ...
     def __enter__(self) -> Self: ...
     def __exit__(
         self,

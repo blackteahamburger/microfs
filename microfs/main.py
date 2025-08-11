@@ -106,8 +106,8 @@ The following commands are available:
     parser.add_argument(
         "-t",
         "--timeout",
-        type=int,
-        help="Device response timeout in seconds.\nDefault to 10.",
+        type=float,
+        help="Device response timeout in seconds.\nDefaults to 10.",
         default=10,
     )
     parser.add_argument(
