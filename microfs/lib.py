@@ -391,8 +391,7 @@ def put(
         the local file).
 
     """
-    with filename.open("rb") as local:
-        content = local.read()
+    content = filename.read_bytes()
     if target is None:
         target = filename.name
     commands = [f"fd = open('{target}', 'wb')", "f = fd.write"]
@@ -450,8 +449,7 @@ def get(
         msg = "Unexpected file data format received from device."
         raise MicroBitIOError(msg)
     out = ast.literal_eval(out.decode())
-    with target.open("wb") as f:
-        f.write(out)
+    target.write_bytes(out)
 
 
 def version(serial: MicroBitSerial) -> dict[str, str]:

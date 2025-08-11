@@ -382,13 +382,11 @@ def test_get() -> None:
             mock.patch.object(
                 mock_serial, "write_commands", return_value=b"b'hello'"
             ) as write_commands,
-            mock.patch.object(pathlib.Path, "open", mock.mock_open()) as mo,
+            mock.patch.object(pathlib.Path, "write_bytes") as write_bytes,
         ):
             microfs.lib.get(mock_serial, "hello.txt", file_path)
             write_commands.assert_called_once_with(commands)
-            mo.assert_called_once_with("wb")
-            handle = mo()
-            handle.write.assert_called_once_with(b"hello")
+            write_bytes.assert_called_once_with(b"hello")
 
 
 def test_get_no_target() -> None:
@@ -422,13 +420,11 @@ def test_get_no_target() -> None:
         mock.patch.object(
             mock_serial, "write_commands", return_value=b"b'hello'"
         ) as write_commands,
-        mock.patch.object(pathlib.Path, "open", mock.mock_open()) as mo,
+        mock.patch.object(pathlib.Path, "write_bytes") as write_bytes,
     ):
         microfs.lib.get(mock_serial, "hello.txt")
         write_commands.assert_called_once_with(commands)
-        mo.assert_called_once_with("wb")
-        handle = mo()
-        handle.write.assert_called_once_with(b"hello")
+        write_bytes.assert_called_once_with(b"hello")
 
 
 def test_get_invalid_data() -> None:

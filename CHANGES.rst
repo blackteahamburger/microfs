@@ -1,6 +1,10 @@
 Release History
 ===============
 
+2.0.2
+-----
+* Simplify file reading and writing operations.
+
 2.0.1
 -----
 * Fix exit code when an unknown error occurs. Now exits with code 1.

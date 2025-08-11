@@ -20,10 +20,10 @@ from microfs.main import main
 if TYPE_CHECKING:
     from collections.abc import Generator
 
-MICROFS_VERSION = "2.0.1"
+MICROFS_VERSION = "2.0.2"
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True)  # pyright: ignore[reportUnknownMemberType]
 def patch_importlib_metadata_version() -> Generator[None, Any]:
     """Fixture: patch importlib.metadata.version to return MICROFS_VERSION."""
     with mock.patch(
