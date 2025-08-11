@@ -510,6 +510,37 @@ def test_version() -> None:
         ])
 
 
+def test_micropython_version_new_style() -> None:
+    """Test micropython_version returns the new style version string."""
+    mock_serial = mock.MagicMock()
+    version_dict = {
+        "sysname": "microbit",
+        "nodename": "microbit",
+        "release": "2.1.2",
+        "version": "micro:bit v2.1.2+3f22f30-dirty on 2025-08-10; "
+        "MicroPython v1.27.0-preview on 2025-08-10",
+        "machine": "micro:bit with nRF52833",
+    }
+    with mock.patch("microfs.lib.version", return_value=version_dict):
+        result = microfs.lib.micropython_version(mock_serial)
+        assert result == "2.1.2"
+
+
+def test_micropython_version_old_style() -> None:
+    """Test micropython_version returns unknown for old version string."""
+    mock_serial = mock.MagicMock()
+    version_dict = {
+        "sysname": "microbit",
+        "nodename": "microbit",
+        "release": "1.0",
+        "version": "MicroPython v1.8.1",
+        "machine": "micro:bit with nRF51822",
+    }
+    with mock.patch("microfs.lib.version", return_value=version_dict):
+        result = microfs.lib.micropython_version(mock_serial)
+        assert result == "unknown"
+
+
 def test_microbitserial_context_manager() -> None:
     """Test MicroBitSerial context manager calls raw_on and raw_off."""
     with mock.patch.object(serial.Serial, "__init__", return_value=None):

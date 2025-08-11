@@ -1,9 +1,16 @@
 Release History
 ===============
 
+2.0.4
+-----
+* Add `micropython_version` function to get the version of MicroPython.
+* Add `--micropython` option for `version` command.
+* Better command-line help messages.
+
 2.0.3
 -----
-* Fix type hint for timeout parameter in `MicroBitSerial.__init__` and `MicroBitSerial.get_serial`.
+* Fix type hint for timeout parameter in `MicroBitSerial.__init__`
+  and `MicroBitSerial.get_serial`.
 
 2.0.2
 -----

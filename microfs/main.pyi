@@ -9,6 +9,7 @@ from microfs.lib import cp as cp
 from microfs.lib import du as du
 from microfs.lib import get as get
 from microfs.lib import ls as ls
+from microfs.lib import micropython_version as micropython_version
 from microfs.lib import mv as mv
 from microfs.lib import put as put
 from microfs.lib import rm as rm

@@ -20,7 +20,7 @@ from microfs.main import main
 if TYPE_CHECKING:
     from collections.abc import Generator
 
-MICROFS_VERSION = "2.0.3"
+MICROFS_VERSION = "2.0.4"
 
 
 @pytest.fixture(autouse=True)  # pyright: ignore[reportUnknownMemberType]
@@ -253,6 +253,26 @@ def test_main_version_flag() -> None:
     output = "".join(call.args[0] for call in mock_stdout.write.call_args_list)
     assert f"MicroFS version: {MICROFS_VERSION}" in output
     assert pytest_exc.type is SystemExit
+
+
+def test_main_version_micropython_option() -> None:
+    """Test that main prints micropython version with '--micropython' used."""
+    with (
+        mock.patch("sys.argv", ["ufs", "version", "--micropython"]),
+        mock.patch(
+            "microfs.main.micropython_version", return_value="2.0.1"
+        ) as mock_mp_ver,
+        mock.patch.object(builtins, "print") as mock_print,
+        mock.patch("microfs.main.MicroBitSerial") as mock_serial_class,
+        mock.patch(
+            "microfs.main.MicroBitSerial.get_serial",
+            return_value=mock_serial_class.return_value,
+        ),
+    ):
+        mock_serial_instance = mock_serial_class.return_value
+        main()
+        mock_mp_ver.assert_called_once_with(mock_serial_instance)
+        mock_print.assert_called_once_with("2.0.1")
 
 
 def test_main_handles_microbit_io_error() -> None:

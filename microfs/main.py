@@ -22,6 +22,7 @@ from microfs.lib import (
     du,
     get,
     ls,
+    micropython_version,
     mv,
     put,
     rm,
@@ -67,34 +68,19 @@ def _handle_get(args: argparse.Namespace) -> None:
 
 
 def _handle_version(args: argparse.Namespace) -> None:
-    version_info = version(args.serial)
-    for key, value in version_info.items():
-        print(f"{key}: {value}")  # noqa: T201
+    if args.micropython:
+        print(micropython_version(args.serial))  # noqa: T201
+    else:
+        version_info = version(args.serial)
+        for key, value in version_info.items():
+            print(f"{key}: {value}")  # noqa: T201
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    help_text = """
-Interact with the filesystem on a connected the BBC micro:bit device.
-
-The following commands are available:
-
-* ls - list files on the device. Based on the equivalent Unix command.
-* rm - remove a named file on the device. Based on the Unix command.
-* cp - copy a file from one location to another on the device.
-  Based on the Unix command.
-* mv - move a file from one location to another on the device.
-  Based on the Unix command.
-* cat - display the contents of a file on the device.
-  Based on the Unix command.
-* du - get the size of a file on the device in bytes.
-  Based on the Unix command.
-* put - copy a named local file onto the device a la equivalent FTP command.
-* get - copy a named file from the device to the local file system a la FTP.
-* version - get version information for MicroPython running on the device.
-"""
     parser = argparse.ArgumentParser(
         prog="ufs",
-        description=help_text,
+        description="Interact with the filesystem on a connected"
+        "BBC micro:bit device.",
         formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(
@@ -122,7 +108,9 @@ The following commands are available:
     )
 
     ls_parser = subparsers.add_parser(
-        "ls", formatter_class=argparse.RawTextHelpFormatter
+        "ls",
+        help="List files on the device.\nBased on the Unix command.",
+        formatter_class=argparse.RawTextHelpFormatter,
     )
     ls_parser.add_argument(
         "-d",
@@ -133,36 +121,53 @@ The following commands are available:
     )
 
     rm_parser = subparsers.add_parser(
-        "rm", formatter_class=argparse.RawTextHelpFormatter
+        "rm",
+        help="Remove a named file on the device.\nBased on the Unix command.",
+        formatter_class=argparse.RawTextHelpFormatter,
     )
     rm_parser.add_argument(
         "paths", nargs="+", help="Specify one or more target filenames."
     )
 
     cp_parser = subparsers.add_parser(
-        "cp", formatter_class=argparse.RawTextHelpFormatter
+        "cp",
+        help="Copy a file from one location to another on the device.\n"
+        "Based on the Unix command.",
+        formatter_class=argparse.RawTextHelpFormatter,
     )
     cp_parser.add_argument("src", help="Source filename on micro:bit.")
     cp_parser.add_argument("dst", help="Destination filename on micro:bit.")
 
     mv_parser = subparsers.add_parser(
-        "mv", formatter_class=argparse.RawTextHelpFormatter
+        "mv",
+        help="Move a file from one location to another on the device.\n"
+        "Based on the Unix command.",
+        formatter_class=argparse.RawTextHelpFormatter,
     )
     mv_parser.add_argument("src", help="Source filename on micro:bit.")
     mv_parser.add_argument("dst", help="Destination filename on micro:bit.")
 
     cat_parser = subparsers.add_parser(
-        "cat", formatter_class=argparse.RawTextHelpFormatter
+        "cat",
+        help="Display the contents of a file on the device.\n"
+        "Based on the Unix command.",
+        formatter_class=argparse.RawTextHelpFormatter,
     )
     cat_parser.add_argument("path", help="The file to display.")
 
     du_parser = subparsers.add_parser(
-        "du", formatter_class=argparse.RawTextHelpFormatter
+        "du",
+        help="Get the size of a file on the device in bytes.\n"
+        "Based on the Unix command.",
+        formatter_class=argparse.RawTextHelpFormatter,
     )
     du_parser.add_argument("path", help="The file to check du.")
 
     get_parser = subparsers.add_parser(
-        "get", formatter_class=argparse.RawTextHelpFormatter
+        "get",
+        help="Copy a named file from the device to the local file system.\n"
+        "FTP equivalent.",
+        formatter_class=argparse.RawTextHelpFormatter,
     )
     get_parser.add_argument(
         "path", help="The name of the file to copy from the micro:bit."
@@ -176,7 +181,9 @@ The following commands are available:
     )
 
     put_parser = subparsers.add_parser(
-        "put", formatter_class=argparse.RawTextHelpFormatter
+        "put",
+        help="Copy a named local file onto the device.\nFTP equivalent.",
+        formatter_class=argparse.RawTextHelpFormatter,
     )
     put_parser.add_argument(
         "path",
@@ -190,8 +197,16 @@ The following commands are available:
         "Defaults to the name of the local file.",
     )
 
-    subparsers.add_parser(
-        "version", formatter_class=argparse.RawTextHelpFormatter
+    version_parser = subparsers.add_parser(
+        "version",
+        help="Return information identifying "
+        "the current operating system on the device.",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    version_parser.add_argument(
+        "--micropython",
+        action="store_true",
+        help="Show MicroPython version information only.",
     )
     return parser
 

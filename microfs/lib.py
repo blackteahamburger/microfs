@@ -456,7 +456,7 @@ def get(
 
 def version(serial: MicroBitSerial) -> dict[str, str]:
     """
-    Return version information for MicroPython running on the connected device.
+    Return information identifying the current operating system on the device.
 
     Args:
         serial: The serial connection to the device.
@@ -474,3 +474,25 @@ def version(serial: MicroBitSerial) -> dict[str, str]:
         key, value = item.split("=")
         result[key] = value[1:-1]
     return result
+
+
+def micropython_version(serial: MicroBitSerial) -> str:
+    """
+    Return the version of MicroPython running on the connected device.
+
+    Args:
+        serial: The serial connection to the device.
+
+    Returns:
+        The MicroPython version string.
+
+    """
+    version_info = version(serial)
+    board_info = version_info["version"].split()
+    if board_info[0] == "micro:bit" and board_info[1].startswith("v"):
+        # New style versions, so the correct information will be
+        # in the "release" field.
+        return version_info["release"]
+    # MicroPython was found, but not with an expected version string.
+    # Probably an old unknown version.
+    return "unknown"
