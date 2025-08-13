@@ -1,6 +1,10 @@
 Release History
 ===============
 
+2.0.6
+-----
+* Add missing short options for commands.
+
 2.0.5
 -----
 * **API CHANGE**: `MicroBitSerial.flush` override method is removed

@@ -1,4 +1,6 @@
 # Copyright (c) 2025 Blackteahamburger <blackteahamburger@outlook.com>
+#
+# See the LICENSE file for more information.
 from collections.abc import Callable as Callable
 
 from microfs.lib import MicroBitIOError as MicroBitIOError

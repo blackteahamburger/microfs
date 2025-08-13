@@ -2,7 +2,7 @@
 # Copyright (c) 2016 Nicholas H.Tollervey
 #
 # See the LICENSE file for more information.
-"""Tests for the microfs module."""
+"""Tests for the microfs.main module."""
 
 from __future__ import annotations
 
@@ -20,14 +20,12 @@ from microfs.main import main
 if TYPE_CHECKING:
     from collections.abc import Generator
 
-MICROFS_VERSION = "2.0.5"
-
 
 @pytest.fixture(autouse=True)  # pyright: ignore[reportUnknownMemberType]
 def patch_importlib_metadata_version() -> Generator[None, Any]:
     """Fixture: patch importlib.metadata.version to return MICROFS_VERSION."""
     with mock.patch(
-        "microfs.main.importlib.metadata.version", return_value=MICROFS_VERSION
+        "microfs.main.importlib.metadata.version", return_value="1.0.0"
     ):
         yield
 
@@ -251,7 +249,7 @@ def test_main_version_flag() -> None:
     ):
         main()
     output = "".join(call.args[0] for call in mock_stdout.write.call_args_list)
-    assert f"MicroFS version: {MICROFS_VERSION}" in output
+    assert "MicroFS version: 1.0.0" in output
     assert pytest_exc.type is SystemExit
 
 

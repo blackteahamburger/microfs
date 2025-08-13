@@ -1,4 +1,6 @@
 # Copyright (c) 2025 Blackteahamburger <blackteahamburger@outlook.com>
+#
+# See the LICENSE file for more information.
 import pathlib
 from collections.abc import Iterable
 from typing import Final, Self

@@ -84,6 +84,7 @@ def _build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(
+        "-v",
         "--version",
         action="version",
         version=f"MicroFS version: {importlib.metadata.version('microfs2')}",
@@ -97,6 +98,7 @@ def _build_parser() -> argparse.ArgumentParser:
         default=10,
     )
     parser.add_argument(
+        "-s",
         "--serial",
         type=str,
         help="Specify the serial port of micro:bit (e.g. /dev/ttyACM0).",
@@ -204,6 +206,7 @@ def _build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawTextHelpFormatter,
     )
     version_parser.add_argument(
+        "-m",
         "--micropython",
         action="store_true",
         help="Show MicroPython version information only.",

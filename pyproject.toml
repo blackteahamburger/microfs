@@ -29,7 +29,7 @@
     name = "microfs2"
     readme = "README.rst"
     requires-python = ">=3.11"
-    version = "2.0.5"
+    version = "2.0.6"
 
     [project.optional-dependencies]
         dev = ["coverage", "pytest-cov", "pytest>=5", "ruff", "sphinx"]

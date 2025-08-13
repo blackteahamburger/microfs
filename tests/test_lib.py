@@ -2,7 +2,7 @@
 # Copyright (c) 2016 Nicholas H.Tollervey
 #
 # See the LICENSE file for more information.
-"""Tests for the microfs module."""
+"""Tests for the microfs.lib module."""
 
 from __future__ import annotations
 
