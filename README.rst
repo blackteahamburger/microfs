@@ -24,7 +24,7 @@ In Code
 
 In your Python script import the required functions like this::
 
-    from microfs.lib import MicroBitSerial, ls, rm, cp, mv, cat, du, put, get, version
+    from microfs.lib import MicroBitSerial, ls, rm, cp, mv, cat, du, put, get, version, micropython_version
 
 Read the API documentation below to learn how each of the functions works.
 
@@ -90,9 +90,13 @@ the name of the target file::
     $ ufs put /path/to/local.txt remote.txt
     $ ufs get remote.txt local.txt
 
-Get version information for MicroPython running on the device::
+Get information identifying the current operating system on the device::
 
     $ ufs version
+
+To show MicroPython version information only::
+
+    $ ufs version --micropython
 
 Development
 -----------
