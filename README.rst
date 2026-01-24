@@ -17,7 +17,7 @@ Usage
 -----
 
 There are two ways to use microfs - as a module in your Python code or as a
-stand-alone command to use from your shell (``ufs``).
+stand-alone command to use from your shell (``ufs``/``microfs``).
 
 In Code
 ^^^^^^^
@@ -31,8 +31,7 @@ Read the API documentation below to learn how each of the functions works.
 Command Line
 ^^^^^^^^^^^^
 
-From the command line (but not the Python shell) use the "ufs" ("u" = micro)
-command.
+From the command line use the ``ufs``/``microfs`` command.
 
 To read the built-in help::
 

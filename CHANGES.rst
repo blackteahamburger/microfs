@@ -1,6 +1,11 @@
 Release History
 ===============
 
+2.0.7
+-----
+* Documentation improvements.
+* Add `microfs` as an additional command-line entry point.
+
 2.0.6
 -----
 * Add missing short options for commands.

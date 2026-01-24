@@ -30,16 +30,14 @@
     name = "microfs2"
     readme = "README.rst"
     requires-python = ">=3.11"
-    version = "2.0.6"
-
-    [project.optional-dependencies]
-        dev = ["coverage", "pytest-cov", "pytest>=5", "ruff", "sphinx"]
+    version = "2.0.7"
 
     [project.urls]
         Homepage = "https://github.com/blackteahamburger/microfs"
 
     [project.scripts]
-        ufs = "microfs.main:main"
+        microfs = "microfs.main:main"
+        ufs     = "microfs.main:main"
 
 [tool.coverage.run]
     omit = ["__main__.py"]
