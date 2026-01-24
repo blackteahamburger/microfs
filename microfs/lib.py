@@ -279,8 +279,10 @@ def cp(serial: MicroBitSerial, src: str, dst: str) -> None:
 
     """
     commands = [
-        f"with open('{src}', 'rb') as fsrc, open('{dst}', 'wb') as fdst: "
-        "fdst.write(fsrc.read())"
+        (
+            f"with open('{src}', 'rb') as fsrc, open('{dst}', 'wb') as fdst: "
+            "fdst.write(fsrc.read())"
+        )
     ]
     serial.write_commands(commands)
 
@@ -383,8 +385,8 @@ def get(
     Args:
         serial: The serial connection to the device.
         filename: The name of the file to copy from the micro:bit.
-        target: The local path to copy the micro:bit file to (defaults to the
-        name of the file on the micro:bit).
+        target: The local path to copy the micro:bit file to
+        (defaults to the name of the file on the micro:bit).
 
     Raises:
         MicroBitIOError: If file data format received from device is invalid.

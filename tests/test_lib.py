@@ -50,9 +50,9 @@ def test_find_micro_bit() -> None:
     port_info = [
         "/dev/ttyACM3",
         "MBED CMSIS-DAP",
-        "USB_CDC USB VID:PID=0D28:0204 "
+        ("USB_CDC USB VID:PID=0D28:0204 "
         "SER=9900023431864e45000e10050000005b00000000cc4d28bd "
-        "LOCATION=4-1.2",
+        "LOCATION=4-1.2"),
     ]
     port = FakePort(port_info, serial_number)
     ports = [port]
@@ -66,9 +66,9 @@ def test_find_micro_bit_no_device() -> None:
     port = [
         "/dev/ttyACM3",
         "MBED NOT-MICROBIT",
-        "USB_CDC USB VID:PID=0D29:0205 "
+        ("USB_CDC USB VID:PID=0D29:0205 "
         "SER=9900023431864e45000e10050000005b00000000cc4d28de "
-        "LOCATION=4-1.3",
+        "LOCATION=4-1.3"),
     ]
     ports = [port]
     with mock.patch("microfs.lib.list_serial_ports", return_value=ports):
@@ -242,8 +242,8 @@ def test_cp() -> None:
     ) as write_commands:
         microfs.lib.cp(mock_serial, "foo.txt", "bar.txt")
         write_commands.assert_called_once_with([
-            "with open('foo.txt', 'rb') as fsrc, "
-            "open('bar.txt', 'wb') as fdst: fdst.write(fsrc.read())"
+            ("with open('foo.txt', 'rb') as fsrc, "
+            "open('bar.txt', 'wb') as fdst: fdst.write(fsrc.read())")
         ])
 
 
@@ -336,8 +336,8 @@ def test_get() -> None:
                 "except ImportError:",
                 " try:",
                 "  from machine import UART",
-                "  u = UART(0, "
-                f"{microfs.lib.MicroBitSerial.SERIAL_BAUD_RATE})",
+                ("  u = UART(0, "
+                f"{microfs.lib.MicroBitSerial.SERIAL_BAUD_RATE})"),
                 " except Exception:",
                 "  try:",
                 "   from sys import stdout as u",
@@ -347,8 +347,8 @@ def test_get() -> None:
             "f = open('hello.txt', 'rb')",
             "r = f.read",
             "result = True",
-            "while result:\n result = r(32)\n"
-            " if result:\n  u.write(repr(result))",
+            ("while result:\n result = r(32)\n"
+            " if result:\n  u.write(repr(result))"),
             "f.close()",
         ]
         with (
