@@ -1,39 +1,51 @@
 Release History
 ===============
 
+2.0.8
+-----
+
+* Miscellaneous fixes and improvements.
+
 2.0.7
 -----
+
 * Documentation improvements.
 * Add `microfs` as an additional command-line entry point.
 
 2.0.6
 -----
+
 * Add missing short options for commands.
 
 2.0.5
 -----
+
 * **API CHANGE**: `MicroBitSerial.flush` override method is removed
 * `MicroBitSerial.open` and `MicroBitSerial.close`
   now call `raw_on` and `raw_off` respectively.
 
 2.0.4
 -----
+
 * Add `micropython_version` function to get the version of MicroPython.
 * Add `--micropython` option for `version` command.
 * Better command-line help messages.
 
 2.0.3
 -----
+
 * Fix type hint for timeout parameter in `MicroBitSerial.__init__`
   and `MicroBitSerial.get_serial`.
 
 2.0.2
 -----
+
 * Simplify file reading and writing operations.
 * Support for specifying a directory as the target in the `get` command.
 
 2.0.1
 -----
+
 * Fix exit code when an unknown error occurs. Now exits with code 1.
 
 2.0.0

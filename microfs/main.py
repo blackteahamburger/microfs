@@ -78,7 +78,7 @@ def _handle_version(args: argparse.Namespace) -> None:
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="ufs",
+        prog=sys.argv[0],
         description="Interact with the filesystem on a connected"
         "BBC micro:bit device.",
         formatter_class=argparse.RawTextHelpFormatter,
