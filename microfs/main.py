@@ -218,7 +218,7 @@ def _run_command(args: argparse.Namespace) -> None:
     if args.serial is not None:
         args.serial = MicroBitSerial(args.serial, timeout=args.timeout)
     else:
-        args.serial = MicroBitSerial.get_serial()
+        args.serial = MicroBitSerial.get_serial(timeout=args.timeout)
     with args.serial:
         _dispatch_command(args)
 
