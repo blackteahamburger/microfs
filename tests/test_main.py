@@ -40,12 +40,32 @@ def test_main_timeout() -> None:
         mock.patch(
             "microfs.main.MicroBitSerial.get_serial",
             return_value=mock_serial_class.return_value,
-        ),
+        ) as mock_get_serial,
     ):
         mock_serial_instance = mock_serial_class.return_value
         main()
         mock_ls.assert_called_once_with(mock_serial_instance)
         mock_print.assert_called_once_with("foo bar")
+        mock_get_serial.assert_called_once_with(timeout=10)
+
+
+def test_main_timeout_with_custom_value() -> None:
+    """Test that custom timeout is forwarded to device discovery."""
+    with (
+        mock.patch("sys.argv", ["ufs", "--timeout", "2.5", "ls"]),
+        mock.patch("microfs.main.ls", return_value=["foo"]) as mock_ls,
+        mock.patch("microfs.main.MicroBitSerial") as mock_serial_class,
+        mock.patch.object(builtins, "print") as mock_print,
+        mock.patch(
+            "microfs.main.MicroBitSerial.get_serial",
+            return_value=mock_serial_class.return_value,
+        ) as mock_get_serial,
+    ):
+        mock_serial_instance = mock_serial_class.return_value
+        main()
+        mock_ls.assert_called_once_with(mock_serial_instance)
+        mock_print.assert_called_once_with("foo")
+        mock_get_serial.assert_called_once_with(timeout=2.5)
 
 
 def test_main_serial() -> None:
