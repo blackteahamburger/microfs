@@ -169,8 +169,10 @@ class MicroBitSerial(Serial):
         """
         data = self.read_until(msg)
         if not data.endswith(msg):
-            err = "Error: Could not enter raw REPL, "
-            f"expected: {msg}, got: {data}"
+            err = (
+                "Error: Could not enter raw REPL, "
+                f"expected: {msg}, got: {data}"
+            )
             raise MicroBitIOError(err)
 
     def raw_on(self) -> None:
