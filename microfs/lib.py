@@ -16,7 +16,7 @@ from serial import EIGHTBITS, PARITY_NONE, STOPBITS_ONE, Serial
 from serial.tools.list_ports import comports as list_serial_ports
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Generator, Iterable
 
     from _typeshed import ReadableBuffer
     from serial.tools.list_ports_linux import SysFS
@@ -101,8 +101,7 @@ class MicroBitSerial(Serial):
             If no device is connected the result will be None.
 
         """
-        ports = list_serial_ports()
-        for port in ports:
+        for port in list_serial_ports():
             if "VID:PID=0D28:0204" in port[2].upper():
                 return port
         return None
@@ -193,8 +192,7 @@ class MicroBitSerial(Serial):
         # Some MicroPython versions/ports/forks provide a different message
         # after a Soft Reset, check if we are in raw REPL
         # if not send a CTRL-A again
-        data = self.read_until(raw_repl_msg)
-        if not data.endswith(raw_repl_msg):
+        if not self.read_until(raw_repl_msg).endswith(raw_repl_msg):
             self.write(b"\r\x01")
             self.flush_to_msg(raw_repl_msg)
         self.flush()
@@ -223,8 +221,9 @@ class MicroBitSerial(Serial):
         for i in range(0, len(command_bytes), 32):
             self.write(command_bytes[i : min(i + 32, len(command_bytes))])
         self.write(b"\x04")
-        response = self.read_until(b"\x04>")  # Read until prompt.
-        out, err = response[2:-2].split(b"\x04", 1)  # Split stdout, stderr
+        out, err = self.read_until(b"\x04>")[2:-2].split(
+            b"\x04", 1
+        )  # Read until prompt. Split stdout, stderr
         if err:
             decoded = err.decode()
             try:
@@ -266,8 +265,9 @@ def ls(serial: MicroBitSerial) -> list[str]:
         A list of the files on the connected device.
 
     """
-    out = serial.write_commands(["import os", "print(os.listdir())"])
-    return ast.literal_eval(out.decode())
+    return ast.literal_eval(
+        serial.write_commands(("import os", "print(os.listdir())")).decode()
+    )
 
 
 def cp(serial: MicroBitSerial, src: str, dst: str) -> None:
@@ -280,13 +280,12 @@ def cp(serial: MicroBitSerial, src: str, dst: str) -> None:
         dst: Destination filename on micro:bit.
 
     """
-    commands = [
+    serial.write_commands((
         (
             f"with open('{src}', 'rb') as fsrc, open('{dst}', 'wb') as fdst: "
             "fdst.write(fsrc.read())"
-        )
-    ]
-    serial.write_commands(commands)
+        ),
+    ))
 
 
 def mv(serial: MicroBitSerial, src: str, dst: str) -> None:
@@ -300,7 +299,7 @@ def mv(serial: MicroBitSerial, src: str, dst: str) -> None:
 
     """
     cp(serial, src, dst)
-    rm(serial, [src])
+    rm(serial, (src,))
 
 
 def rm(serial: MicroBitSerial, filenames: Iterable[str]) -> None:
@@ -312,9 +311,13 @@ def rm(serial: MicroBitSerial, filenames: Iterable[str]) -> None:
         filenames: A list of file names to remove.
 
     """
-    commands = ["import os"]
-    commands.extend(f"os.remove('{filename}')" for filename in filenames)
-    serial.write_commands(commands)
+
+    def _commands() -> Generator[str]:
+        yield "import os"
+        for filename in filenames:
+            yield f"os.remove('{filename}')"
+
+    serial.write_commands(_commands())
 
 
 def cat(serial: MicroBitSerial, filename: str) -> str:
@@ -329,9 +332,9 @@ def cat(serial: MicroBitSerial, filename: str) -> str:
         The file content as string.
 
     """
-    commands = [f"with open('{filename}', 'r') as f: print(f.read())"]
-    out = serial.write_commands(commands)
-    return out.decode()
+    return serial.write_commands((
+        f"with open('{filename}', 'r') as f: print(f.read())",
+    )).decode()
 
 
 def du(serial: MicroBitSerial, filename: str) -> int:
@@ -346,9 +349,12 @@ def du(serial: MicroBitSerial, filename: str) -> int:
         Size in bytes.
 
     """
-    commands = ["import os", f"print(os.size('{filename}'))"]
-    out = serial.write_commands(commands)
-    return int(out.decode().strip())
+    return int(
+        serial
+        .write_commands(("import os", f"print(os.size('{filename}'))"))
+        .decode()
+        .strip()
+    )
 
 
 def put(
@@ -367,13 +373,15 @@ def put(
     content = filename.read_bytes()
     if target is None:
         target = filename.name
-    commands = [f"fd = open('{target}', 'wb')", "f = fd.write"]
-    while content:
-        line = content[:64]
-        commands.append("f(" + repr(line) + ")")
-        content = content[64:]
-    commands.append("fd.close()")
-    serial.write_commands(commands)
+
+    def _commands() -> Generator[str]:
+        yield f"fd = open('{target}', 'wb')"
+        yield "f = fd.write"
+        for i in range(0, len(content), 64):
+            yield "f(" + repr(content[i : i + 64]) + ")"
+        yield "fd.close()"
+
+    serial.write_commands(_commands())
 
 
 def get(
@@ -398,8 +406,8 @@ def get(
         target = pathlib.Path(filename)
     elif target.is_dir():
         target /= filename
-    commands = [
-        "\n".join([
+    out = serial.write_commands((
+        "\n".join((
             "try:",
             " from microbit import uart as u",
             "except ImportError:",
@@ -411,20 +419,18 @@ def get(
             "   from sys import stdout as u",
             "  except Exception:",
             "   raise Exception('Could not find UART module in device.')",
-        ]),
+        )),
         f"f = open('{filename}', 'rb')",
         "r = f.read",
         "result = True",
         "while result:\n result = r(32)\n if result:\n  u.write(repr(result))",
         "f.close()",
-    ]
-    out = serial.write_commands(commands)
+    ))
     # Recombine the bytes while removing "b'" from start and "'" from end.
     if not out.startswith((b"b'", b'b"')) or not out.endswith((b"'", b'"')):
         msg = "Unexpected file data format received from device."
         raise MicroBitIOError(msg)
-    out = ast.literal_eval(out.decode())
-    target.write_bytes(out)
+    target.write_bytes(ast.literal_eval(out.decode()))
 
 
 def version(serial: MicroBitSerial) -> dict[str, str]:
@@ -438,12 +444,13 @@ def version(serial: MicroBitSerial) -> dict[str, str]:
         A dictionary containing version information.
 
     """
-    out = serial.write_commands(["import os", "print(os.uname())"])
-    raw = out.decode().strip()
-    raw = raw[1:-1]
-    items = raw.split(", ")
     result: dict[str, str] = {}
-    for item in items:
+    for item in (
+        serial
+        .write_commands(("import os", "print(os.uname())"))
+        .decode()
+        .strip()
+    )[1:-1].split(", "):
         key, value = item.split("=")
         result[key] = value[1:-1]
     return result

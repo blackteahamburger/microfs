@@ -204,10 +204,10 @@ def test_ls() -> None:
     ) as write_commands:
         result = microfs.lib.ls(mock_serial)
         assert result == ["a.txt"]
-        write_commands.assert_called_once_with([
+        write_commands.assert_called_once_with((
             "import os",
             "print(os.listdir())",
-        ])
+        ))
 
 
 def test_ls_width_delimiter() -> None:
@@ -219,10 +219,10 @@ def test_ls_width_delimiter() -> None:
         result = microfs.lib.ls(serial=mock_serial)
         delimited_result = ";".join(result)
         assert delimited_result == "a.txt;b.txt"
-        write_commands.assert_called_once_with([
+        write_commands.assert_called_once_with((
             "import os",
             "print(os.listdir())",
-        ])
+        ))
 
 
 def test_rm() -> None:
@@ -232,10 +232,9 @@ def test_rm() -> None:
         mock_serial, "write_commands", return_value=b""
     ) as write_commands:
         microfs.lib.rm(mock_serial, ["foo.txt"])
-        write_commands.assert_called_once_with([
-            "import os",
-            "os.remove('foo.txt')",
-        ])
+        assert write_commands.call_count == 1
+        called_arg = write_commands.call_args[0][0]
+        assert list(called_arg) == ["import os", "os.remove('foo.txt')"]
 
 
 def test_cp() -> None:
@@ -245,12 +244,12 @@ def test_cp() -> None:
         mock_serial, "write_commands", return_value=b""
     ) as write_commands:
         microfs.lib.cp(mock_serial, "foo.txt", "bar.txt")
-        write_commands.assert_called_once_with([
+        write_commands.assert_called_once_with((
             (
                 "with open('foo.txt', 'rb') as fsrc, "
                 "open('bar.txt', 'wb') as fdst: fdst.write(fsrc.read())"
-            )
-        ])
+            ),
+        ))
 
 
 def test_mv() -> None:
@@ -262,7 +261,7 @@ def test_mv() -> None:
     ):
         microfs.lib.mv(mock_serial, "foo.txt", "bar.txt")
         mock_cp.assert_called_once_with(mock_serial, "foo.txt", "bar.txt")
-        mock_rm.assert_called_once_with(mock_serial, ["foo.txt"])
+        mock_rm.assert_called_once_with(mock_serial, ("foo.txt",))
 
 
 def test_cat() -> None:
@@ -273,9 +272,9 @@ def test_cat() -> None:
     ) as write_commands:
         result = microfs.lib.cat(mock_serial, "foo.txt")
         assert result == "hello world"
-        write_commands.assert_called_once_with([
-            "with open('foo.txt', 'r') as f: print(f.read())"
-        ])
+        write_commands.assert_called_once_with((
+            "with open('foo.txt', 'r') as f: print(f.read())",
+        ))
 
 
 def test_du() -> None:
@@ -286,10 +285,10 @@ def test_du() -> None:
     ) as write_commands:
         result = microfs.lib.du(mock_serial, "foo.txt")
         assert result == 1024
-        write_commands.assert_called_once_with([
+        write_commands.assert_called_once_with((
             "import os",
             "print(os.size('foo.txt'))",
-        ])
+        ))
 
 
 def test_put() -> None:
@@ -308,7 +307,9 @@ def test_put() -> None:
                 "f(b'hello')",
                 "fd.close()",
             ]
-            write_commands.assert_called_once_with(commands)
+            assert write_commands.call_count == 1
+            called_arg = write_commands.call_args[0][0]
+            assert list(called_arg) == commands
 
 
 def test_put_no_target() -> None:
@@ -327,7 +328,9 @@ def test_put_no_target() -> None:
                 "f(b'hello')",
                 "fd.close()",
             ]
-            write_commands.assert_called_once_with(commands)
+            assert write_commands.call_count == 1
+            called_arg = write_commands.call_args[0][0]
+            assert list(called_arg) == commands
 
 
 def test_get() -> None:
@@ -335,8 +338,8 @@ def test_get() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         file_path = pathlib.Path(tmpdir) / "local.txt"
         mock_serial = mock.MagicMock()
-        commands = [
-            "\n".join([
+        commands = (
+            "\n".join((
                 "try:",
                 " from microbit import uart as u",
                 "except ImportError:",
@@ -351,7 +354,7 @@ def test_get() -> None:
                 "   from sys import stdout as u",
                 "  except Exception:",
                 "   raise Exception('Could not find UART module in device.')",
-            ]),
+            )),
             "f = open('hello.txt', 'rb')",
             "r = f.read",
             "result = True",
@@ -360,7 +363,7 @@ def test_get() -> None:
                 " if result:\n  u.write(repr(result))"
             ),
             "f.close()",
-        ]
+        )
         with (
             mock.patch.object(
                 mock_serial, "write_commands", return_value=b"b'hello'"
@@ -379,8 +382,8 @@ def test_get_no_target() -> None:
     If no target is provided, use the remote file name.
     """
     mock_serial = mock.MagicMock()
-    commands = [
-        "\n".join([
+    commands = (
+        "\n".join((
             "try:",
             " from microbit import uart as u",
             "except ImportError:",
@@ -392,13 +395,13 @@ def test_get_no_target() -> None:
             "   from sys import stdout as u",
             "  except Exception:",
             "   raise Exception('Could not find UART module in device.')",
-        ]),
+        )),
         "f = open('hello.txt', 'rb')",
         "r = f.read",
         "result = True",
         "while result:\n result = r(32)\n if result:\n  u.write(repr(result))",
         "f.close()",
-    ]
+    )
     with (
         mock.patch.object(
             mock_serial, "write_commands", return_value=b"b'hello'"
@@ -417,8 +420,8 @@ def test_get_target_is_dir() -> None:
     Should save as target/filename.
     """
     mock_serial = mock.MagicMock()
-    commands = [
-        "\n".join([
+    commands = (
+        "\n".join((
             "try:",
             " from microbit import uart as u",
             "except ImportError:",
@@ -430,13 +433,13 @@ def test_get_target_is_dir() -> None:
             "   from sys import stdout as u",
             "  except Exception:",
             "   raise Exception('Could not find UART module in device.')",
-        ]),
+        )),
         "f = open('hello.txt', 'rb')",
         "r = f.read",
         "result = True",
         "while result:\n result = r(32)\n if result:\n  u.write(repr(result))",
         "f.close()",
-    ]
+    )
     with (
         tempfile.TemporaryDirectory() as tmpdir,
         mock.patch.object(
@@ -487,10 +490,10 @@ def test_version() -> None:
             "2017-09-01"
         )
         assert result["machine"] == "micro:bit with nRF51822"
-        write_commands.assert_called_once_with([
+        write_commands.assert_called_once_with((
             "import os",
             "print(os.uname())",
-        ])
+        ))
 
 
 def test_micropython_version_new_style() -> None:

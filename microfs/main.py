@@ -71,8 +71,7 @@ def _handle_version(args: argparse.Namespace) -> None:
     if args.micropython:
         print(micropython_version(args.serial))  # noqa: T201
     else:
-        version_info = version(args.serial)
-        for key, value in version_info.items():
+        for key, value in version(args.serial).items():
             print(f"{key}: {value}")  # noqa: T201
 
 
@@ -240,13 +239,10 @@ def _dispatch_command(args: argparse.Namespace) -> None:
 
 def main() -> None:
     """Entry point for the command line tool 'ufs'."""
-    argv = sys.argv[1:]
     logger: logging.Logger = logging.getLogger(__name__)
     logging.basicConfig(format="%(levelname)s:%(message)s")
-    parser = _build_parser()
-    args = parser.parse_args(argv)
     try:
-        _run_command(args)
+        _run_command(_build_parser().parse_args())
     except MicroBitIOError as e:
         logger.error(  # noqa: TRY400
             "An I/O error occurred with the BBC micro:bit device: %s", e
