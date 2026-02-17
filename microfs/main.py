@@ -30,48 +30,48 @@ from microfs.lib import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable  # pragma: no cover
+    from collections.abc import Callable
 
 
-def _handle_ls(args: argparse.Namespace) -> None:
-    list_of_files = ls(args.serial)
+def _handle_ls(serial: MicroBitSerial, args: argparse.Namespace) -> None:
+    list_of_files = ls(serial)
     if list_of_files:
         print(args.delimiter.join(list_of_files))  # noqa: T201
 
 
-def _handle_cp(args: argparse.Namespace) -> None:
-    cp(args.serial, args.src, args.dst)
+def _handle_cp(serial: MicroBitSerial, args: argparse.Namespace) -> None:
+    cp(serial, args.src, args.dst)
 
 
-def _handle_mv(args: argparse.Namespace) -> None:
-    mv(args.serial, args.src, args.dst, args.unsafe)
+def _handle_mv(serial: MicroBitSerial, args: argparse.Namespace) -> None:
+    mv(serial, args.src, args.dst, args.unsafe)
 
 
-def _handle_rm(args: argparse.Namespace) -> None:
-    rm(args.serial, args.paths)
+def _handle_rm(serial: MicroBitSerial, args: argparse.Namespace) -> None:
+    rm(serial, args.paths)
 
 
-def _handle_cat(args: argparse.Namespace) -> None:
-    print(cat(args.serial, args.path))  # noqa: T201
+def _handle_cat(serial: MicroBitSerial, args: argparse.Namespace) -> None:
+    print(cat(serial, args.path))  # noqa: T201
 
 
-def _handle_du(args: argparse.Namespace) -> None:
-    print(du(args.serial, args.path))  # noqa: T201
+def _handle_du(serial: MicroBitSerial, args: argparse.Namespace) -> None:
+    print(du(serial, args.path))  # noqa: T201
 
 
-def _handle_put(args: argparse.Namespace) -> None:
-    put(args.serial, args.path, args.target)
+def _handle_put(serial: MicroBitSerial, args: argparse.Namespace) -> None:
+    put(serial, args.path, args.target)
 
 
-def _handle_get(args: argparse.Namespace) -> None:
-    get(args.serial, args.path, args.target)
+def _handle_get(serial: MicroBitSerial, args: argparse.Namespace) -> None:
+    get(serial, args.path, args.target)
 
 
-def _handle_version(args: argparse.Namespace) -> None:
+def _handle_version(serial: MicroBitSerial, args: argparse.Namespace) -> None:
     if args.micropython:
-        print(micropython_version(args.serial))  # noqa: T201
+        print(micropython_version(serial))  # noqa: T201
     else:
-        for key, value in version(args.serial).items():
+        for key, value in version(serial).items():
             print(f"{key}: {value}")  # noqa: T201
 
 
@@ -221,27 +221,22 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def _run_command(args: argparse.Namespace) -> None:
     if args.serial is not None:
-        args.serial = MicroBitSerial(args.serial, timeout=args.timeout)
+        serial = MicroBitSerial(args.serial, timeout=args.timeout)
     else:
-        args.serial = MicroBitSerial.get_serial(timeout=args.timeout)
-    with args.serial:
-        _dispatch_command(args)
-
-
-def _dispatch_command(args: argparse.Namespace) -> None:
-    handlers: dict[str, Callable[..., None]] = {
-        "ls": _handle_ls,
-        "rm": _handle_rm,
-        "cp": _handle_cp,
-        "mv": _handle_mv,
-        "cat": _handle_cat,
-        "du": _handle_du,
-        "put": _handle_put,
-        "get": _handle_get,
-        "version": _handle_version,
-    }
-    if args.command in handlers:
-        handlers[args.command](args)
+        serial = MicroBitSerial.get_serial(timeout=args.timeout)
+    with serial:
+        handlers: dict[str, Callable[[MicroBitSerial, argparse.Namespace], None]] = {
+            "ls": _handle_ls,
+            "rm": _handle_rm,
+            "cp": _handle_cp,
+            "mv": _handle_mv,
+            "cat": _handle_cat,
+            "du": _handle_du,
+            "put": _handle_put,
+            "get": _handle_get,
+            "version": _handle_version,
+        }
+        handlers[args.command](serial, args)
 
 
 def main() -> None:
