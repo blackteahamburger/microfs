@@ -220,10 +220,11 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _run_command(args: argparse.Namespace) -> None:
-    if args.serial is not None:
-        serial = MicroBitSerial(args.serial, timeout=args.timeout)
-    else:
-        serial = MicroBitSerial.get_serial(timeout=args.timeout)
+    serial = (
+        MicroBitSerial(args.serial, timeout=args.timeout)
+        if args.serial is not None
+        else MicroBitSerial.get_serial(timeout=args.timeout)
+    )
     with serial:
         handlers: dict[str, Callable[[MicroBitSerial, argparse.Namespace], None]] = {
             "ls": _handle_ls,
