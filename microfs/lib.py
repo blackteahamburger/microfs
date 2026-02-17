@@ -16,7 +16,7 @@ from serial import EIGHTBITS, PARITY_NONE, STOPBITS_ONE, Serial
 from serial.tools.list_ports import comports as list_serial_ports
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterable
+    from collections.abc import Iterable
 
     from _typeshed import ReadableBuffer
     from serial.tools.list_ports_linux import SysFS
@@ -128,10 +128,15 @@ class MicroBitSerial(Serial):
         return cls(port[0], timeout=timeout)
 
     def open(self) -> None:
-        """Open the serial port and enter raw mode."""
+        """
+        Open the serial port and enter raw mode.
+
+        os module is pre-imported to speed up subsequent commands.
+        """
         super().open()
         time.sleep(0.1)
         self.raw_on()
+        self.write_command("import os")
 
     def close(self) -> None:
         """Exit raw mode and close the serial port."""
@@ -168,10 +173,7 @@ class MicroBitSerial(Serial):
         """
         data = self.read_until(msg)
         if not data.endswith(msg):
-            err = (
-                "Error: Could not enter raw REPL, "
-                f"expected: {msg}, got: {data}"
-            )
+            err = f"Error: Could not enter raw REPL, expected: {msg}, got: {data}"
             raise MicroBitIOError(err)
 
     def raw_on(self) -> None:
@@ -233,25 +235,43 @@ class MicroBitSerial(Serial):
             raise MicroBitIOError(msg or "There was an error.")
         return out
 
-    def write_commands(self, commands: Iterable[str]) -> bytes:
-        """
-        Send multiple commands to the micro:bit and return the result.
 
-        For this to work correctly, a particular sequence of commands needs to
-        be sent to put the device into a good state to process the incoming
-        command.
+def read_file(serial: MicroBitSerial, filename: str) -> bytes:
+    """
+    Read a file from the micro:bit.
 
-        Args:
-            commands: An iterable of commands to send to the micro:bit.
+    Args:
+        serial: The serial connection to the device.
+        filename: The name of the file to read.
 
-        Returns:
-            The stdout output from the micro:bit.
+    Returns:
+        The content of the file as bytes.
 
-        """
-        result = b""
-        for command in commands:
-            result += self.write_command(command)
-        return result
+    Raises:
+        MicroBitIOError: If file data format received from device is invalid.
+
+    """
+    out = serial.write_command(
+        f"with open({filename!r}, 'rb') as f: print(f.read(), end='')"
+    )
+    # Recombine the bytes while removing "b'" from start and "'" from end.
+    if not out.startswith((b"b'", b'b"')) or not out.endswith((b"'", b'"')):
+        msg = "Unexpected file data format received from device."
+        raise MicroBitIOError(msg)
+    return ast.literal_eval(out.decode())
+
+
+def write_file(serial: MicroBitSerial, filename: str, content: bytes) -> None:
+    """
+    Write a file to the micro:bit.
+
+    Args:
+        serial: The serial connection to the device.
+        filename: The name of the file to write.
+        content: The content to write to the file.
+
+    """
+    serial.write_command(f"with open({filename!r}, 'wb') as f: f.write({content!r})")
 
 
 def ls(serial: MicroBitSerial) -> list[str]:
@@ -266,7 +286,7 @@ def ls(serial: MicroBitSerial) -> list[str]:
 
     """
     return ast.literal_eval(
-        serial.write_commands(("import os", "print(os.listdir())")).decode()
+        serial.write_command("print(os.listdir(), end='')").decode()
     )
 
 
@@ -280,15 +300,10 @@ def cp(serial: MicroBitSerial, src: str, dst: str) -> None:
         dst: Destination filename on micro:bit.
 
     """
-    serial.write_commands((
-        (
-            f"with open('{src}', 'rb') as fsrc, open('{dst}', 'wb') as fdst: "
-            "fdst.write(fsrc.read())"
-        ),
-    ))
+    write_file(serial, dst, read_file(serial, src))
 
 
-def mv(serial: MicroBitSerial, src: str, dst: str) -> None:
+def mv(serial: MicroBitSerial, src: str, dst: str, unsafe: bool = False) -> None:
     """
     Move a file on the micro:bit filesystem.
 
@@ -296,10 +311,20 @@ def mv(serial: MicroBitSerial, src: str, dst: str) -> None:
         serial: Serial connection.
         src: Source filename on micro:bit.
         dst: Destination filename on micro:bit.
+        unsafe: If True, remove the source file before writing to
+            the destination. It will result in data loss if the write fails,
+            but is useful to work around Errno 28 (ENOSPC, no space left).
+            Defaults to False, which means the source file will only be
+            removed after a successful copy.
 
     """
-    cp(serial, src, dst)
-    rm(serial, (src,))
+    if unsafe:
+        content = read_file(serial, src)
+        rm(serial, (src,))
+        write_file(serial, dst, content)
+    else:
+        cp(serial, src, dst)
+        rm(serial, (src,))
 
 
 def rm(serial: MicroBitSerial, filenames: Iterable[str]) -> None:
@@ -311,13 +336,9 @@ def rm(serial: MicroBitSerial, filenames: Iterable[str]) -> None:
         filenames: A list of file names to remove.
 
     """
-
-    def _commands() -> Generator[str]:
-        yield "import os"
-        for filename in filenames:
-            yield f"os.remove('{filename}')"
-
-    serial.write_commands(_commands())
+    serial.write_command(
+        "\n".join(f"os.remove({filename!r})" for filename in filenames)
+    )
 
 
 def cat(serial: MicroBitSerial, filename: str) -> str:
@@ -332,9 +353,7 @@ def cat(serial: MicroBitSerial, filename: str) -> str:
         The file content as string.
 
     """
-    return serial.write_commands((
-        f"with open('{filename}', 'r') as f: print(f.read())",
-    )).decode()
+    return read_file(serial, filename).decode()
 
 
 def du(serial: MicroBitSerial, filename: str) -> int:
@@ -349,12 +368,7 @@ def du(serial: MicroBitSerial, filename: str) -> int:
         Size in bytes.
 
     """
-    return int(
-        serial
-        .write_commands(("import os", f"print(os.size('{filename}'))"))
-        .decode()
-        .strip()
-    )
+    return int(serial.write_command(f"print(os.size({filename!r}), end='')").decode())
 
 
 def put(
@@ -370,18 +384,9 @@ def put(
         the local file).
 
     """
-    content = filename.read_bytes()
-    if target is None:
-        target = filename.name
-
-    def _commands() -> Generator[str]:
-        yield f"fd = open('{target}', 'wb')"
-        yield "f = fd.write"
-        for i in range(0, len(content), 64):
-            yield "f(" + repr(content[i : i + 64]) + ")"
-        yield "fd.close()"
-
-    serial.write_commands(_commands())
+    write_file(
+        serial, target if target is not None else filename.name, filename.read_bytes()
+    )
 
 
 def get(
@@ -398,39 +403,12 @@ def get(
         target: The local path to copy the micro:bit file to
         (defaults to the name of the file on the micro:bit).
 
-    Raises:
-        MicroBitIOError: If file data format received from device is invalid.
-
     """
     if target is None:
         target = pathlib.Path(filename)
     elif target.is_dir():
         target /= filename
-    out = serial.write_commands((
-        "\n".join((
-            "try:",
-            " from microbit import uart as u",
-            "except ImportError:",
-            " try:",
-            "  from machine import UART",
-            f"  u = UART(0, {MicroBitSerial.SERIAL_BAUD_RATE})",
-            " except Exception:",
-            "  try:",
-            "   from sys import stdout as u",
-            "  except Exception:",
-            "   raise Exception('Could not find UART module in device.')",
-        )),
-        f"f = open('{filename}', 'rb')",
-        "r = f.read",
-        "result = True",
-        "while result:\n result = r(32)\n if result:\n  u.write(repr(result))",
-        "f.close()",
-    ))
-    # Recombine the bytes while removing "b'" from start and "'" from end.
-    if not out.startswith((b"b'", b'b"')) or not out.endswith((b"'", b'"')):
-        msg = "Unexpected file data format received from device."
-        raise MicroBitIOError(msg)
-    target.write_bytes(ast.literal_eval(out.decode()))
+    target.write_bytes(read_file(serial, filename))
 
 
 def version(serial: MicroBitSerial) -> dict[str, str]:
@@ -445,12 +423,9 @@ def version(serial: MicroBitSerial) -> dict[str, str]:
 
     """
     result: dict[str, str] = {}
-    for item in (
-        serial
-        .write_commands(("import os", "print(os.uname())"))
-        .decode()
-        .strip()
-    )[1:-1].split(", "):
+    for item in (serial.write_command("print(os.uname(), end='')").decode())[
+        1:-1
+    ].split(", "):
         key, value = item.split("=")
         result[key] = value[1:-1]
     return result

@@ -44,7 +44,7 @@ def _handle_cp(args: argparse.Namespace) -> None:
 
 
 def _handle_mv(args: argparse.Namespace) -> None:
-    mv(args.serial, args.src, args.dst)
+    mv(args.serial, args.src, args.dst, args.unsafe)
 
 
 def _handle_rm(args: argparse.Namespace) -> None:
@@ -77,8 +77,7 @@ def _handle_version(args: argparse.Namespace) -> None:
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Interact with the filesystem on a connected"
-        "BBC micro:bit device.",
+        description="Interact with the filesystem on a connectedBBC micro:bit device.",
         formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(
@@ -146,6 +145,16 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     mv_parser.add_argument("src", help="Source filename on micro:bit.")
     mv_parser.add_argument("dst", help="Destination filename on micro:bit.")
+    mv_parser.add_argument(
+        "-u",
+        "--unsafe",
+        action="store_true",
+        help="If True, remove the source file before writing to\n"
+        "the destination. It will result in data loss if the write fails,\n"
+        "but is useful to work around Errno 28 (ENOSPC, no space left).\n"
+        "Defaults to False, which means the source file will only be\n"
+        "removed after a successful copy.\n",
+    )
 
     cat_parser = subparsers.add_parser(
         "cat",
@@ -186,9 +195,7 @@ def _build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawTextHelpFormatter,
     )
     put_parser.add_argument(
-        "path",
-        type=pathlib.Path,
-        help="The local file to copy onto the micro:bit.",
+        "path", type=pathlib.Path, help="The local file to copy onto the micro:bit."
     )
     put_parser.add_argument(
         "target",

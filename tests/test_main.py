@@ -24,9 +24,7 @@ if TYPE_CHECKING:
 @pytest.fixture(autouse=True)  # pyright: ignore[reportUnknownMemberType]
 def patch_importlib_metadata_version() -> Generator[None, Any]:
     """Fixture: patch importlib.metadata.version to return MICROFS_VERSION."""
-    with mock.patch(
-        "microfs.main.importlib.metadata.version", return_value="1.0.0"
-    ):
+    with mock.patch("microfs.main.importlib.metadata.version", return_value="1.0.0"):
         yield
 
 
@@ -137,9 +135,7 @@ def test_main_cp() -> None:
     ):
         mock_serial_instance = mock_serial_class.return_value
         main()
-        mock_cp.assert_called_once_with(
-            mock_serial_instance, "foo.txt", "bar.txt"
-        )
+        mock_cp.assert_called_once_with(mock_serial_instance, "foo.txt", "bar.txt")
 
 
 def test_main_mv() -> None:
@@ -156,7 +152,7 @@ def test_main_mv() -> None:
         mock_serial_instance = mock_serial_class.return_value
         main()
         mock_mv.assert_called_once_with(
-            mock_serial_instance, "foo.txt", "bar.txt"
+            mock_serial_instance, "foo.txt", "bar.txt", False
         )
 
 
@@ -243,9 +239,7 @@ def test_main_version() -> None:
     version_info = {"sysname": "microbit", "release": "1.0"}
     with (
         mock.patch("sys.argv", ["ufs", "version"]),
-        mock.patch(
-            "microfs.main.version", return_value=version_info
-        ) as mock_version,
+        mock.patch("microfs.main.version", return_value=version_info) as mock_version,
         mock.patch.object(builtins, "print") as mock_print,
         mock.patch("microfs.main.MicroBitSerial") as mock_serial_class,
         mock.patch(
@@ -297,9 +291,7 @@ def test_main_handles_microbit_io_error() -> None:
     """Test that MicroBitIOError is logged as an I/O error."""
     with (
         mock.patch("sys.argv", ["ufs", "ls"]),
-        mock.patch(
-            "microfs.main._run_command", side_effect=MicroBitIOError("io fail")
-        ),
+        mock.patch("microfs.main._run_command", side_effect=MicroBitIOError("io fail")),
         mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
     ):
         mock_logger = mock_get_logger.return_value
@@ -317,8 +309,7 @@ def test_main_handles_microbit_not_found_error() -> None:
     with (
         mock.patch("sys.argv", ["ufs", "ls"]),
         mock.patch(
-            "microfs.main._run_command",
-            side_effect=MicroBitNotFoundError("not found"),
+            "microfs.main._run_command", side_effect=MicroBitNotFoundError("not found")
         ),
         mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
     ):
@@ -337,8 +328,7 @@ def test_main_handles_file_not_found_error() -> None:
     with (
         mock.patch("sys.argv", ["ufs", "ls"]),
         mock.patch(
-            "microfs.main._run_command",
-            side_effect=FileNotFoundError("missing.txt"),
+            "microfs.main._run_command", side_effect=FileNotFoundError("missing.txt")
         ),
         mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
     ):
@@ -354,9 +344,7 @@ def test_main_handles_is_a_directory_error() -> None:
     """Test that IsADirectoryError logs 'expected file but found directory'."""
     with (
         mock.patch("sys.argv", ["ufs", "ls"]),
-        mock.patch(
-            "microfs.main._run_command", side_effect=IsADirectoryError("dir")
-        ),
+        mock.patch("microfs.main._run_command", side_effect=IsADirectoryError("dir")),
         mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
     ):
         mock_logger = mock_get_logger.return_value
@@ -373,9 +361,7 @@ def test_main_handles_generic_exception() -> None:
     """Test that unknown exceptions are logged with logger.exception."""
     with (
         mock.patch("sys.argv", ["ufs", "ls"]),
-        mock.patch(
-            "microfs.main._run_command", side_effect=RuntimeError("boom")
-        ),
+        mock.patch("microfs.main._run_command", side_effect=RuntimeError("boom")),
         mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
     ):
         mock_logger = mock_get_logger.return_value
@@ -392,17 +378,14 @@ def test_main_handles_serial_exception() -> None:
     with (
         mock.patch("sys.argv", ["ufs", "ls"]),
         mock.patch(
-            "microfs.main._run_command",
-            side_effect=serial.SerialException("fail"),
+            "microfs.main._run_command", side_effect=serial.SerialException("fail")
         ),
         mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
     ):
         mock_logger = mock_get_logger.return_value
         with pytest.raises(SystemExit) as pytest_exc:
             main()
-        mock_logger.error.assert_called_with(
-            "Serial communication error: %s", mock.ANY
-        )
+        mock_logger.error.assert_called_with("Serial communication error: %s", mock.ANY)
         assert "fail" in str(mock_logger.error.call_args[0][1])
         assert pytest_exc.type is SystemExit
 
