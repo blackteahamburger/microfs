@@ -1,6 +1,16 @@
 Release History
 ===============
 
+2.1.0
+-----
+
+* **API CHANGE**: `MicroBitSerial.write_commands` method is removed.
+  Use `MicroBitSerial.write_command` instead.
+  Example: serial.write_command("\n".join(...)).
+* Add `MicroBitSerial.read_file` and `MicroBitSerial.write_file` methods.
+* Add `--unsafe` option for `mv` command.
+* Simplify all functions.
+
 2.0.9
 -----
 

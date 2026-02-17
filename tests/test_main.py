@@ -1,5 +1,4 @@
 # Copyright (c) 2025 Blackteahamburger <blackteahamburger@outlook.com>
-# Copyright (c) 2016 Nicholas H.Tollervey
 #
 # See the LICENSE file for more information.
 """Tests for the microfs.main module."""
