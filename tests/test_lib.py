@@ -10,7 +10,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from microfs.exceptions import MicroBitError, MicroBitIOError, MicroBitNotFoundError
+from microfs.exceptions import (
+    MicroBitBaseException,
+    MicroBitError,
+    MicroBitIOError,
+    MicroBitNotFoundError,
+    MicroBitValueError,
+)
 from microfs.lib import (
     MicroBitSerial,
     cat,
@@ -207,8 +213,6 @@ def test_raw_on_standard_path() -> None:
 def test_raw_on_fallback_ctrl_a_path() -> None:
     """raw_on must re-send CTRL-A when the soft-reboot check fails to reach raw REPL."""
     serial: MicroBitSerial = MagicMock(spec=MicroBitSerial)
-    # The only real read_until call in raw_on is the if-not check at the bottom.
-    # Returning something that does not end with raw_repl_msg triggers the branch.
     serial.read_until = MagicMock(return_value=b"something else")
     with patch("microfs.lib.time.sleep"):
         MicroBitSerial.raw_on(serial)
@@ -240,6 +244,56 @@ def test_write_command_long_command_is_chunked() -> None:
     assert len(data_writes) > 1
 
 
+def test_write_command_raises_known_exception_on_error() -> None:
+    """write_command must raise the matching MicroBit exception when reported."""
+    serial: MicroBitSerial = MagicMock(spec=MicroBitSerial)
+    serial.read_until = MagicMock(return_value=b"OK\x04ValueError: bad value\x04>")
+    with pytest.raises(MicroBitValueError, match="bad value"):
+        MicroBitSerial.write_command(serial, "raise ValueError('bad value')")
+
+
+def test_write_command_raises_base_exception_for_unknown_error_type() -> None:
+    """write_command falls back to MicroBitBaseException for unrecognized exceptions."""
+    serial: MicroBitSerial = MagicMock(spec=MicroBitSerial)
+    serial.read_until = MagicMock(
+        return_value=b"OK\x04UnknownThing: something went wrong\x04>"
+    )
+    with pytest.raises(MicroBitBaseException):
+        MicroBitSerial.write_command(serial, "some_command()")
+
+
+def test_write_command_raises_with_decoded_fallback_when_no_colon() -> None:
+    """write_command uses the full decoded stderr when it contains no colon."""
+    serial: MicroBitSerial = MagicMock(spec=MicroBitSerial)
+    serial.read_until = MagicMock(return_value=b"OK\x04NocolonError\x04>")
+    with pytest.raises(MicroBitBaseException, match="NocolonError"):
+        MicroBitSerial.write_command(serial, "bad()")
+
+
+def test_write_command_index_error_path_and_fallback_message() -> None:
+    """write_command covers the IndexError branch and 'There was an error.' fallback."""
+    serial: MicroBitSerial = MagicMock(spec=MicroBitSerial)
+
+    err_bytes: MagicMock = MagicMock()
+
+    def _always_true(_: object) -> bool:
+        return True
+
+    err_bytes.__bool__ = _always_true
+    err_bytes.decode.return_value = ""
+
+    sliced: MagicMock = MagicMock()
+    sliced.partition.return_value = (b"", b"\x04", err_bytes)
+
+    raw_result: MagicMock = MagicMock()
+    raw_result.__getitem__.return_value = sliced
+
+    serial.read_until.return_value = raw_result
+
+    with pytest.raises(MicroBitBaseException, match="There was an error\\."):
+        MicroBitSerial.write_command(serial, "bad()")
+
+
 def test_read_file_success_single_quote() -> None:
     """read_file must decode a b'...' response correctly."""
     serial: MicroBitSerial = MagicMock(spec=MicroBitSerial)
@@ -263,7 +317,7 @@ def test_read_file_invalid_format_raises() -> None:
 
 
 def test_read_file_invalid_no_start_raises() -> None:
-    r"""read_file raises if response lacks expected start."""
+    """read_file raises if response lacks expected start."""
     serial: MicroBitSerial = MagicMock(spec=MicroBitSerial)
     serial.write_command = MagicMock(return_value=b"x'hello'")
     with pytest.raises(MicroBitIOError):
@@ -314,6 +368,18 @@ def test_cp_reads_then_writes() -> None:
     mock_write.assert_called_once_with(serial, "dst.txt", b"content")
 
 
+def test_cp_same_src_and_dst_is_noop() -> None:
+    """Cp must return immediately without reading or writing when src == dst."""
+    serial: MicroBitSerial = MagicMock(spec=MicroBitSerial)
+    with (
+        patch("microfs.lib.read_file") as mock_read,
+        patch("microfs.lib.write_file") as mock_write,
+    ):
+        cp(serial, "same.txt", "same.txt")
+    mock_read.assert_not_called()
+    mock_write.assert_not_called()
+
+
 def test_mv_safe_copies_then_removes() -> None:
     """Mv (safe) copies then removes source."""
     serial: MicroBitSerial = MagicMock(spec=MicroBitSerial)
@@ -335,6 +401,36 @@ def test_mv_unsafe_removes_before_write() -> None:
     mock_read.assert_called_once_with(serial, "src.txt")
     mock_rm.assert_called_once_with(serial, ("src.txt",))
     mock_write.assert_called_once_with(serial, "dst.txt", b"data")
+
+
+def test_mv_same_src_and_dst_is_noop() -> None:
+    """Mv must return immediately without any operation when src == dst."""
+    serial: MicroBitSerial = MagicMock(spec=MicroBitSerial)
+    with (
+        patch("microfs.lib.cp") as mock_cp,
+        patch("microfs.lib.rm") as mock_rm,
+        patch("microfs.lib.read_file") as mock_read,
+        patch("microfs.lib.write_file") as mock_write,
+    ):
+        mv(serial, "same.txt", "same.txt")
+    mock_cp.assert_not_called()
+    mock_rm.assert_not_called()
+    mock_read.assert_not_called()
+    mock_write.assert_not_called()
+
+
+def test_mv_same_src_and_dst_unsafe_is_also_noop() -> None:
+    """Mv with unsafe=True must also return immediately when src == dst."""
+    serial: MicroBitSerial = MagicMock(spec=MicroBitSerial)
+    with (
+        patch("microfs.lib.read_file") as mock_read,
+        patch("microfs.lib.rm") as mock_rm,
+        patch("microfs.lib.write_file") as mock_write,
+    ):
+        mv(serial, "same.txt", "same.txt", unsafe=True)
+    mock_read.assert_not_called()
+    mock_rm.assert_not_called()
+    mock_write.assert_not_called()
 
 
 def test_rm_single_file() -> None:

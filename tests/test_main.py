@@ -13,14 +13,14 @@ from unittest import mock
 import pytest
 import serial
 
-from microfs.exceptions import MicroBitIOError, MicroBitNotFoundError
+from microfs.exceptions import MicroBitError, MicroBitIOError, MicroBitNotFoundError
 from microfs.main import main
 
 if TYPE_CHECKING:
     from collections.abc import Generator
 
 
-@pytest.fixture(autouse=True)  # pyright: ignore[reportUnknownMemberType]
+@pytest.fixture(autouse=True)
 def patch_importlib_metadata_version() -> Generator[None, Any]:
     """Fixture: patch importlib.metadata.version to return MICROFS_VERSION."""
     with mock.patch("microfs.main.importlib.metadata.version", return_value="1.0.0"):
@@ -284,6 +284,31 @@ def test_main_version_micropython_option() -> None:
         main()
         mock_mp_ver.assert_called_once_with(mock_serial_instance)
         mock_print.assert_called_once_with("2.0.1")
+
+
+def test_main_handles_microbit_error_base_class() -> None:
+    """Test that a plain MicroBitError (not a subclass) is logged with its type name."""
+
+    class _DirectMicroBitError(MicroBitError):
+        pass
+
+    with (
+        mock.patch("sys.argv", ["ufs", "ls"]),
+        mock.patch(
+            "microfs.main._run_command",
+            side_effect=_DirectMicroBitError("generic device error"),
+        ),
+        mock.patch("microfs.main.logging.getLogger") as mock_get_logger,
+    ):
+        mock_logger = mock_get_logger.return_value
+        with pytest.raises(SystemExit) as pytest_exc:
+            main()
+        mock_logger.error.assert_called_with(
+            "An error (%s) occurred with the BBC micro:bit device: %s",
+            mock.ANY,
+            mock.ANY,
+        )
+        assert pytest_exc.type is SystemExit
 
 
 def test_main_handles_microbit_io_error() -> None:
