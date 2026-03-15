@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Blackteahamburger <blackteahamburger@outlook.com>
+# Copyright (c) 2025-2026 Blackteahamburger <blackteahamburger@outlook.com>
 #
 # See the LICENSE file for more information.
 """Tests for the microfs.main module."""
@@ -13,7 +13,7 @@ from unittest import mock
 import pytest
 import serial
 
-from microfs.lib import MicroBitIOError, MicroBitNotFoundError
+from microfs.exceptions import MicroBitIOError, MicroBitNotFoundError
 from microfs.main import main
 
 if TYPE_CHECKING:

@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Blackteahamburger <blackteahamburger@outlook.com>
+# Copyright (c) 2025-2026 Blackteahamburger <blackteahamburger@outlook.com>
 # Copyright (c) 2016 Nicholas H.Tollervey
 #
 # See the LICENSE file for more information.
@@ -15,23 +15,13 @@ from typing import TYPE_CHECKING, Final, Self
 from serial import EIGHTBITS, PARITY_NONE, STOPBITS_ONE, Serial
 from serial.tools.list_ports import comports as list_serial_ports
 
+from .exceptions import *
+
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from _typeshed import ReadableBuffer
     from serial.tools.list_ports_linux import SysFS
-
-
-class MicroBitError(OSError):
-    """Base class for exceptions related to the BBC micro:bit."""
-
-
-class MicroBitIOError(MicroBitError):
-    """Exception raised for I/O errors related to the BBC micro:bit."""
-
-
-class MicroBitNotFoundError(MicroBitError):
-    """Exception raised when the BBC micro:bit is not found."""
 
 
 class MicroBitSerial(Serial):
@@ -212,9 +202,6 @@ class MicroBitSerial(Serial):
         Args:
             command: The command to send to the micro:bit.
 
-        Raises:
-            MicroBitIOError: If there's a problem with the commands sent.
-
         Returns:
             The stdout output from the micro:bit.
 
@@ -223,16 +210,21 @@ class MicroBitSerial(Serial):
         for i in range(0, len(command_bytes), 32):
             self.write(command_bytes[i : min(i + 32, len(command_bytes))])
         self.write(b"\x04")
-        out, err = self.read_until(b"\x04>")[2:-2].split(
-            b"\x04", 1
-        )  # Read until prompt. Split stdout, stderr
+        # Read until prompt
+        out, _, err = self.read_until(b"\x04>")[2:-2].partition(b"\x04")
+        # Split stdout, stderr
         if err:
             decoded = err.decode()
             try:
-                msg = decoded.split("\r\n")[-2]
+                last_line = decoded.splitlines()[-1]
             except IndexError:
-                msg = decoded
-            raise MicroBitIOError(msg or "There was an error.")
+                last_line = ""
+            exc_name, _, exc_msg = last_line.partition(":")
+            # Dynamically resolve a corresponding MicroBit<ExceptionName>
+            exc_cls = globals().get(
+                f"MicroBit{exc_name.strip()}", MicroBitBaseException
+            )
+            raise exc_cls(exc_msg.strip() or decoded or "There was an error.")
         return out
 
 
@@ -300,6 +292,8 @@ def cp(serial: MicroBitSerial, src: str, dst: str) -> None:
         dst: Destination filename on micro:bit.
 
     """
+    if src == dst:
+        return
     write_file(serial, dst, read_file(serial, src))
 
 
@@ -318,6 +312,8 @@ def mv(serial: MicroBitSerial, src: str, dst: str, unsafe: bool = False) -> None
             removed after a successful copy.
 
     """
+    if src == dst:
+        return
     if unsafe:
         content = read_file(serial, src)
         rm(serial, (src,))
@@ -426,7 +422,7 @@ def version(serial: MicroBitSerial) -> dict[str, str]:
     for item in (serial.write_command("print(os.uname(), end='')").decode())[
         1:-1
     ].split(", "):
-        key, value = item.split("=")
+        key, _, value = item.partition("=")
         result[key] = value[1:-1]
     return result
 

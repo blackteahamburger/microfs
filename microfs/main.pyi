@@ -1,10 +1,11 @@
-# Copyright (c) 2025 Blackteahamburger <blackteahamburger@outlook.com>
+# Copyright (c) 2025-2026 Blackteahamburger <blackteahamburger@outlook.com>
 #
 # See the LICENSE file for more information.
 from collections.abc import Callable as Callable
 
-from microfs.lib import MicroBitIOError as MicroBitIOError
-from microfs.lib import MicroBitNotFoundError as MicroBitNotFoundError
+from microfs.exceptions import MicroBitError as MicroBitError
+from microfs.exceptions import MicroBitIOError as MicroBitIOError
+from microfs.exceptions import MicroBitNotFoundError as MicroBitNotFoundError
 from microfs.lib import MicroBitSerial as MicroBitSerial
 from microfs.lib import cat as cat
 from microfs.lib import cp as cp

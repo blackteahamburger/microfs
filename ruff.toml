@@ -1,7 +1,7 @@
 builtins       = ["_"]
 exclude        = ["docs/conf.py", "tests/__init__.py"]
 preview        = true
-target-version = "py314"
+target-version = "py311"
 unsafe-fixes   = true
 
 [analyze]
@@ -48,6 +48,11 @@ unsafe-fixes   = true
 
     [lint.extend-per-file-ignores]
         "**/__init__.py*" = ["F401", "F403"]
+        "microfs/exceptions.py" = ["N818"]
+        "microfs/exceptions.pyi" = ["N818"]
+        "microfs/lib.py" = ["DOC502", "F403", "F405"]
+        "microfs/lib.pyi" = ["F403"]
+        "microfs/main.py" = ["T201", "TRY400"]
         "tests/**/*.py" = [
             # at least this three should be fine in tests:
             "ARG",  # Unused function args -> fixtures nevertheless are functionally relevant...

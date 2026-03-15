@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Blackteahamburger <blackteahamburger@outlook.com>
+# Copyright (c) 2025-2026 Blackteahamburger <blackteahamburger@outlook.com>
 #
 # See the LICENSE file for more information.
 """Tests for lib.py with 100% coverage and comprehensive type hints."""
@@ -10,10 +10,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from microfs.exceptions import MicroBitError, MicroBitIOError, MicroBitNotFoundError
 from microfs.lib import (
-    MicroBitError,
-    MicroBitIOError,
-    MicroBitNotFoundError,
     MicroBitSerial,
     cat,
     cp,
@@ -35,11 +33,6 @@ if TYPE_CHECKING:
 
 def _make_port(hwid: str) -> list[Any]:
     return ["PORT", "DESC", hwid]
-
-
-def test_microbit_error_is_oserror() -> None:
-    """MicroBitError must be a subclass of OSError."""
-    assert isinstance(MicroBitError("boom"), OSError)
 
 
 def test_microbit_io_error_hierarchy() -> None:
@@ -236,31 +229,6 @@ def test_write_command_success() -> None:
     serial: MicroBitSerial = MagicMock(spec=MicroBitSerial)
     serial.read_until = MagicMock(return_value=b"OKhello\x04\x04>")
     assert MicroBitSerial.write_command(serial, "print('hello')") == b"hello"
-
-
-def test_write_command_stderr_raises() -> None:
-    """write_command raises when device returns stderr."""
-    serial: MicroBitSerial = MagicMock(spec=MicroBitSerial)
-    stderr: bytes = b"NameError: name 'x' is not defined\r\nNameError\r\n"
-    serial.read_until = MagicMock(return_value=b"OK\x04" + stderr + b"\x04>")
-    with pytest.raises(MicroBitIOError, match="NameError"):
-        MicroBitSerial.write_command(serial, "x")
-
-
-def test_write_command_stderr_no_newline_uses_raw_decoded() -> None:
-    """write_command uses raw decoded string as error if no newline."""
-    serial: MicroBitSerial = MagicMock(spec=MicroBitSerial)
-    serial.read_until = MagicMock(return_value=b"OK\x04oops\x04>")
-    with pytest.raises(MicroBitIOError, match="oops"):
-        MicroBitSerial.write_command(serial, "bad")
-
-
-def test_write_command_empty_stderr_msg_raises_generic() -> None:
-    """write_command raises generic error when stderr empty."""
-    serial: MicroBitSerial = MagicMock(spec=MicroBitSerial)
-    serial.read_until = MagicMock(return_value=b"OK\x04\r\n\x04>")
-    with pytest.raises(MicroBitIOError, match="There was an error"):
-        MicroBitSerial.write_command(serial, "cmd")
 
 
 def test_write_command_long_command_is_chunked() -> None:

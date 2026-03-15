@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Blackteahamburger <blackteahamburger@outlook.com>
+# Copyright (c) 2025-2026 Blackteahamburger <blackteahamburger@outlook.com>
 # Copyright (c) 2016 Nicholas H.Tollervey
 #
 # See the LICENSE file for more information.
@@ -13,9 +13,8 @@ from typing import TYPE_CHECKING
 
 from serial import SerialException, SerialTimeoutException
 
+from microfs.exceptions import MicroBitError, MicroBitIOError, MicroBitNotFoundError
 from microfs.lib import (
-    MicroBitIOError,
-    MicroBitNotFoundError,
     MicroBitSerial,
     cat,
     cp,
@@ -36,7 +35,7 @@ if TYPE_CHECKING:
 def _handle_ls(serial: MicroBitSerial, args: argparse.Namespace) -> None:
     list_of_files = ls(serial)
     if list_of_files:
-        print(args.delimiter.join(list_of_files))  # noqa: T201
+        print(args.delimiter.join(list_of_files))
 
 
 def _handle_cp(serial: MicroBitSerial, args: argparse.Namespace) -> None:
@@ -52,11 +51,11 @@ def _handle_rm(serial: MicroBitSerial, args: argparse.Namespace) -> None:
 
 
 def _handle_cat(serial: MicroBitSerial, args: argparse.Namespace) -> None:
-    print(cat(serial, args.path))  # noqa: T201
+    print(cat(serial, args.path))
 
 
 def _handle_du(serial: MicroBitSerial, args: argparse.Namespace) -> None:
-    print(du(serial, args.path))  # noqa: T201
+    print(du(serial, args.path))
 
 
 def _handle_put(serial: MicroBitSerial, args: argparse.Namespace) -> None:
@@ -69,10 +68,10 @@ def _handle_get(serial: MicroBitSerial, args: argparse.Namespace) -> None:
 
 def _handle_version(serial: MicroBitSerial, args: argparse.Namespace) -> None:
     if args.micropython:
-        print(micropython_version(serial))  # noqa: T201
+        print(micropython_version(serial))
     else:
         for key, value in version(serial).items():
-            print(f"{key}: {value}")  # noqa: T201
+            print(f"{key}: {value}")
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -246,25 +245,30 @@ def main() -> None:
     logging.basicConfig(format="%(levelname)s:%(message)s")
     try:
         _run_command(_build_parser().parse_args())
+    except MicroBitNotFoundError as e:
+        logger.error("The BBC micro:bit device is not connected: %s", e)
+        sys.exit(1)
     except MicroBitIOError as e:
-        logger.error(  # noqa: TRY400
-            "An I/O error occurred with the BBC micro:bit device: %s", e
+        logger.error("An I/O error occurred with the BBC micro:bit device: %s", e)
+        sys.exit(1)
+    except MicroBitError as e:
+        logger.error(
+            "An error (%s) occurred with the BBC micro:bit device: %s",
+            type(e).__name__.removeprefix("MicroBit"),
+            e,
         )
         sys.exit(1)
-    except MicroBitNotFoundError as e:
-        logger.error("The BBC micro:bit device is not connected: %s", e)  # noqa: TRY400
-        sys.exit(1)
     except SerialTimeoutException as e:
-        logger.error("Serial communication timed out: %s", e)  # noqa: TRY400
+        logger.error("Serial communication timed out: %s", e)
         sys.exit(1)
     except SerialException as e:
-        logger.error("Serial communication error: %s", e)  # noqa: TRY400
+        logger.error("Serial communication error: %s", e)
         sys.exit(1)
     except FileNotFoundError as e:
-        logger.error("File not found: %s", e)  # noqa: TRY400
+        logger.error("File not found: %s", e)
         sys.exit(1)
     except IsADirectoryError as e:
-        logger.error("Expected a file but found a directory: %s", e)  # noqa: TRY400
+        logger.error("Expected a file but found a directory: %s", e)
         sys.exit(1)
     except Exception:
         logger.exception("An unknown error occurred during execution.")

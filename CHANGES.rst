@@ -1,6 +1,12 @@
 Release History
 ===============
 
+2.1.1
+-----
+* Fix self-copying and self-moving vulnerabilities in `cp` and `mv` commands
+* **API CHANGE**: Exception classes are changed significantly and moved to
+  a separate `exceptions` module.
+
 2.1.0
 -----
 

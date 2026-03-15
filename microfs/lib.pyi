@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Blackteahamburger <blackteahamburger@outlook.com>
+# Copyright (c) 2025-2026 Blackteahamburger <blackteahamburger@outlook.com>
 #
 # See the LICENSE file for more information.
 import pathlib
@@ -9,9 +9,7 @@ from _typeshed import ReadableBuffer as ReadableBuffer
 from serial import Serial
 from serial.tools.list_ports_linux import SysFS as SysFS
 
-class MicroBitError(OSError): ...
-class MicroBitIOError(MicroBitError): ...
-class MicroBitNotFoundError(MicroBitError): ...
+from .exceptions import *
 
 class MicroBitSerial(Serial):
     SERIAL_BAUD_RATE: Final[int]
