@@ -2,7 +2,7 @@
 # Copyright (c) 2016 Nicholas H.Tollervey
 #
 # See the LICENSE file for more information.
-"""Functions for file system operations on the BBC micro:bit."""
+"""Functions for operations on the BBC micro:bit."""
 
 from __future__ import annotations
 

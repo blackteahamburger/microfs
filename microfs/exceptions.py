@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Blackteahamburger <blackteahamburger@outlook.com>
 #
 # See the LICENSE file for more information.
-"""Exceptions for the BBC micro:bit file system operations."""
+"""Exceptions for operations on the BBC micro:bit."""
 
 
 class MicroBitError(RuntimeError):

@@ -76,7 +76,7 @@ def _handle_version(serial: MicroBitSerial, args: argparse.Namespace) -> None:
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Interact with the filesystem on a connectedBBC micro:bit device.",
+        description="Interact with the filesystem on a connected BBC micro:bit device.",
         formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(
