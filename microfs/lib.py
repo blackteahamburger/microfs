@@ -104,12 +104,11 @@ class MicroBitSerial(Serial):
         Args:
             timeout: Device response timeout.
 
-        Raises:
-            MicroBitNotFoundError: If no micro:bit is found.
-
         Returns:
             A MicroBitSerial object.
 
+        Raises:
+            MicroBitNotFoundError: If no micro:bit is found.
         """
         port = cls.find_microbit()
         if port is None:
